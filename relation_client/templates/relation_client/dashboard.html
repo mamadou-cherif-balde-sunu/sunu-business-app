@@ -1,0 +1,263 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Dashboard — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Dashboard</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+    </div>
+    <span class="badge" style="background:#E30613;font-size:12px;padding:8px 14px">
+        Total : {{ total }} reponses
+    </span>
+</div>
+
+<!-- KPI GLOBAL -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card red">
+            <div class="kpi-label">NPS Global</div>
+            <div class="kpi-val">{{ global_stats.nps }}%</div>
+            <div style="font-size:11px;opacity:.7;margin-top:4px">
+                {% if global_stats.nps >= 50 %}
+                    ✅ Objectif atteint
+                {% else %}
+                    ⚠ Seuil requis : 50%
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card green">
+            <div class="kpi-label">CSAT Global</div>
+            <div class="kpi-val">{{ global_stats.csat }}%</div>
+            <div style="font-size:11px;opacity:.7;margin-top:4px">% Clients satisfaits</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card blue">
+            <div class="kpi-label">CES Global</div>
+            <div class="kpi-val">{{ global_stats.ces }}%</div>
+            <div style="font-size:11px;opacity:.7;margin-top:4px">% Eleve - % Faible</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card gray">
+            <div class="kpi-label">Statut Appels</div>
+            <div class="kpi-val">{{ joints }}</div>
+            <div style="font-size:11px;opacity:.7;margin-top:4px">
+                Joints / {{ injoignables }} Injoignables
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRAPHIQUES -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">NPS par perimetre</div>
+            <div class="card-body">
+                <canvas id="chartNPS" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">CSAT par perimetre</div>
+            <div class="card-body">
+                <canvas id="chartCSAT" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABLEAU RECAP -->
+<div class="card">
+    <div class="card-header">Tableau recapitulatif</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Perimetre</th>
+                    <th>Total</th>
+                    <th>NPS (%)</th>
+                    <th>Statut NPS</th>
+                    <th>CSAT (%)</th>
+                    <th>CES (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>VIE</td>
+                    <td>{{ vie_stats.total }}</td>
+                    <td style="color:{% if vie_stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %};font-weight:600">
+                        {{ vie_stats.nps }}%
+                    </td>
+                    <td>
+                        {% if vie_stats.nps >= 50 %}
+                            <span class="badge bg-success">Objectif atteint</span>
+                        {% else %}
+                            <span class="badge bg-danger">Sous seuil</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ vie_stats.csat }}%</td>
+                    <td>{{ vie_stats.ces }}%</td>
+                </tr>
+                <tr>
+                    <td>IARD</td>
+                    <td>{{ iard_stats.total }}</td>
+                    <td style="color:{% if iard_stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %};font-weight:600">
+                        {{ iard_stats.nps }}%
+                    </td>
+                    <td>
+                        {% if iard_stats.nps >= 50 %}
+                            <span class="badge bg-success">Objectif atteint</span>
+                        {% else %}
+                            <span class="badge bg-danger">Sous seuil</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ iard_stats.csat }}%</td>
+                    <td>{{ iard_stats.ces }}%</td>
+                </tr>
+                <tr style="font-weight:600;background:#FFF5F5">
+                    <td>GLOBAL</td>
+                    <td>{{ global_stats.total }}</td>
+                    <td style="color:{% if global_stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %};font-weight:700">
+                        {{ global_stats.nps }}%
+                    </td>
+                    <td>
+                        {% if global_stats.nps >= 50 %}
+                            <span class="badge bg-success">Objectif atteint</span>
+                        {% else %}
+                            <span class="badge bg-danger">Sous seuil (cible: 50%)</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ global_stats.csat }}%</td>
+                    <td>{{ global_stats.ces }}%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Valeurs avec minimum visible pour les barres a zero
+function barValue(v) {
+    if (v === 0) return 0.5;
+    return v;
+}
+
+const vie_nps    = {{ vie_stats.nps }};
+const iard_nps   = {{ iard_stats.nps }};
+const global_nps = {{ global_stats.nps }};
+
+const vie_csat    = {{ vie_stats.csat }};
+const iard_csat   = {{ iard_stats.csat }};
+const global_csat = {{ global_stats.csat }};
+
+// NPS
+new Chart(document.getElementById('chartNPS'), {
+    type: 'bar',
+    data: {
+        labels: ['VIE', 'IARD', 'GLOBAL'],
+        datasets: [{
+            label: 'NPS (%)',
+            data: [vie_nps, iard_nps, global_nps],
+            backgroundColor: ['#E30613', '#58595B', '#2E6DA4'],
+            borderRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ' NPS : ' + ctx.raw + '%'
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: -100, max: 100,
+                grid: { color: '#F0F0F0' },
+                ticks: {
+                    callback: v => v + '%'
+                }
+            },
+            x: { grid: { display: false } }
+        }
+    },
+    plugins: [{
+        id: 'valueLabels',
+        afterDatasetsDraw(chart) {
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.textAlign = 'center';
+                    const yPos = value >= 0 ? bar.y - 8 : bar.y + 16;
+                    ctx.fillText(value + '%', bar.x, yPos);
+                });
+            });
+        }
+    }]
+});
+
+// CSAT
+new Chart(document.getElementById('chartCSAT'), {
+    type: 'bar',
+    data: {
+        labels: ['VIE', 'IARD', 'GLOBAL'],
+        datasets: [{
+            label: 'CSAT (%)',
+            data: [vie_csat, iard_csat, global_csat],
+            backgroundColor: ['#E30613', '#58595B', '#1D9E75'],
+            borderRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ' CSAT : ' + ctx.raw + '%'
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: 0, max: 100,
+                grid: { color: '#F0F0F0' },
+                ticks: { callback: v => v + '%' }
+            },
+            x: { grid: { display: false } }
+        }
+    },
+    plugins: [{
+        id: 'valueLabels',
+        afterDatasetsDraw(chart) {
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(value + '%', bar.x, bar.y - 8);
+                });
+            });
+        }
+    }]
+});
+</script>
+{% endblock %}

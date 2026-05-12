@@ -1,0 +1,173 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Indicateurs — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Analyse des Indicateurs</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+        <p class="text-muted small mt-2">Analyse detaillee NPS / CSAT / CES par perimetre et par canal</p>
+    </div>
+    <a href="{% url 'export' %}" class="btn btn-sunu">
+        <i class="fas fa-file-excel me-2"></i> Exporter Excel
+    </a>
+</div>
+
+<!-- TABLEAU PRINCIPAL -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-table me-2"></i> Resultats par perimetre
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Perimetre</th>
+                    <th>Total clients</th>
+                    <th>Promoteurs</th>
+                    <th>Passifs</th>
+                    <th>Detracteurs</th>
+                    <th>NPS (%)</th>
+                    <th>Statut NPS</th>
+                    <th>CSAT (%)</th>
+                    <th>CES (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in tableau %}
+                {% if ligne.stats %}
+                <tr>
+                    <td><strong>{{ ligne.perimetre }}</strong></td>
+                    <td>{{ ligne.stats.total }}</td>
+                    <td><span class="badge bg-success">{{ ligne.stats.promoteurs }}</span></td>
+                    <td><span class="badge bg-secondary">{{ ligne.stats.passifs }}</span></td>
+                    <td><span class="badge bg-danger">{{ ligne.stats.detracteurs }}</span></td>
+                    <td>
+                        <strong style="color:{% if ligne.stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %}">
+                            {{ ligne.stats.nps }}%
+                        </strong>
+                    </td>
+                    <td>
+                        {% if ligne.stats.nps >= 50 %}
+                            <span class="badge bg-success">Objectif atteint</span>
+                        {% else %}
+                            <span class="badge bg-danger">Sous seuil (50%)</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ligne.stats.csat }}%</td>
+                    <td>
+                        <span style="color:{% if ligne.stats.ces <= 0 %}#1D9E75{% else %}#E30613{% endif %}">
+                            {{ ligne.stats.ces }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TABLEAU STATUT APPELS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-phone me-2"></i> Statut des appels
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Perimetre</th>
+                            <th>Joints</th>
+                            <th>Injoignables</th>
+                            <th>Pas de reponse</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in tableau %}
+                        {% if ligne.stats %}
+                        <tr>
+                            <td><strong>{{ ligne.perimetre }}</strong></td>
+                            <td><span class="badge bg-success">{{ ligne.stats.joints }}</span></td>
+                            <td><span class="badge bg-danger">{{ ligne.stats.injoignables }}</span></td>
+                            <td><span class="badge bg-warning text-dark">{{ ligne.stats.pas_reponse }}</span></td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> Repartition CSAT
+            </div>
+            <div class="card-body">
+                <canvas id="chartCSAT" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRAPHIQUE CES -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-chart-bar me-2"></i> CES — Effort client par perimetre
+    </div>
+    <div class="card-body">
+        <canvas id="chartCES" height="120"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const labels = [{% for l in tableau %}{% if l.stats %}'{{ l.perimetre }}',{% endif %}{% endfor %}];
+const csat   = [{% for l in tableau %}{% if l.stats %}{{ l.stats.csat }},{% endif %}{% endfor %}];
+const ces    = [{% for l in tableau %}{% if l.stats %}{{ l.stats.ces }},{% endif %}{% endfor %}];
+
+new Chart(document.getElementById('chartCSAT'), {
+    type: 'doughnut',
+    data: {
+        labels: labels,
+        datasets: [{
+            data: csat,
+            backgroundColor: ['#E30613', '#58595B', '#2E6DA4'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+new Chart(document.getElementById('chartCES'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'CES (%)',
+            data: ces,
+            backgroundColor: ['#E30613', '#58595B', '#2E6DA4'],
+            borderRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { min: -100, max: 100, grid: { color: '#F0F0F0' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+</script>
+{% endblock %}

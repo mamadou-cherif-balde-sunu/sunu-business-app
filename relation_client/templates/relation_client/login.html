@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SUNU Business — Connexion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            background: #F5F5F5;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+            width: 100%;
+            max-width: 420px;
+            overflow: hidden;
+        }
+        .login-header {
+            background: #E30613;
+            padding: 32px;
+            text-align: center;
+            color: white;
+        }
+        .login-header .brand {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+        .login-header .sub {
+            font-size: 12px;
+            opacity: .8;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .login-body { padding: 32px; }
+        .form-control:focus {
+            border-color: #E30613;
+            box-shadow: 0 0 0 3px rgba(227,6,19,0.1);
+        }
+        .btn-connexion {
+            background: #E30613;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+        .btn-connexion:hover { background: #B8050F; color: white; }
+        .login-footer {
+            text-align: center;
+            font-size: 11px;
+            color: #bbb;
+            padding: 16px 32px 24px;
+            border-top: 1px solid #F0F0F0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="brand">SUNU</div>
+            <div class="sub">Business · Relation Client</div>
+        </div>
+        <div class="login-body">
+            <h5 class="mb-1" style="color:#58595B">Connexion</h5>
+            <p class="text-muted small mb-4">Entrez vos identifiants pour accéder</p>
+
+            {% if form.errors %}
+            <div class="alert alert-danger" style="background:rgba(227,6,19,0.08);color:#B8050F;border:none;border-radius:7px;font-size:13px;">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Identifiant ou mot de passe incorrect.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-uppercase">Identifiant</label>
+                    <input type="text" name="username" class="form-control"
+                           placeholder="Votre identifiant" autofocus required/>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small text-uppercase">Mot de passe</label>
+                    <input type="password" name="password" class="form-control"
+                           placeholder="Votre mot de passe" required/>
+                </div>
+                <button type="submit" class="btn-connexion">
+                    <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+                </button>
+            </form>
+        </div>
+        <div class="login-footer">
+            SUNU Assurances Cote d'Ivoire &copy; 2026
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

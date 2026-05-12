@@ -1,0 +1,146 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Saisie Client — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Saisie Client</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit me-2"></i> Nouveau enregistrement
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+
+                <!-- Informations generales -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Date enregistrement</label>
+                    <input type="date" name="date_enregistrement" class="form-control" required/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Canal</label>
+                    <select name="canal" class="form-select" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="Call Center VIE">Call Center VIE</option>
+                        <option value="Call Center IARD">Call Center IARD</option>
+                        <option value="Espace Conseil VIE">Espace Conseil VIE</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Date appel</label>
+                    <input type="date" name="date_appel" class="form-control" required/>
+                </div>
+
+                <!-- Informations client -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-uppercase">Nom et Prenoms</label>
+                    <input type="text" name="nom_prenoms" class="form-control"
+                           placeholder="Nom complet du client" required/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">Contact</label>
+                    <input type="text" name="contact" class="form-control"
+                           placeholder="Numero de telephone"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">N° Police</label>
+                    <input type="text" name="numero_police" class="form-control"
+                           placeholder="N° Police"/>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-uppercase">Objet de la visite</label>
+                    <input type="text" name="objet_visite" class="form-control"
+                           placeholder="Motif de l'appel"/>
+                </div>
+
+                <!-- Statut appel -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Statut Appel</label>
+                    <select name="statut_appel" class="form-select" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="Joint">Joint</option>
+                        <option value="Injoignable">Injoignable</option>
+                        <option value="Pas de reponse">Pas de reponse</option>
+                    </select>
+                </div>
+
+                <!-- NPS -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Score NPS (0 a 10)
+                    </label>
+                    <input type="number" name="nps_score" class="form-control"
+                           min="0" max="10" placeholder="0 a 10"/>
+                    <div class="form-text">Ou choisir directement ci-dessous</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Categorie NPS (direct)
+                    </label>
+                    <select name="categorie_nps" class="form-select">
+                        <option value="">-- Choisir --</option>
+                        <option value="Promoteur">Promoteur (9-10)</option>
+                        <option value="Passif">Passif (7-8)</option>
+                        <option value="Detracteur">Detracteur (0-6)</option>
+                    </select>
+                </div>
+
+                <!-- CSAT -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">CSAT</label>
+                    <select name="csat" class="form-select">
+                        <option value="">-- Choisir --</option>
+                        <option value="Satisfait">Satisfait</option>
+                        <option value="Insatisfait">Insatisfait</option>
+                    </select>
+                </div>
+
+                <!-- CES -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">CES</label>
+                    <select name="ces" class="form-select">
+                        <option value="">-- Choisir --</option>
+                        <option value="Effort faible">Effort faible</option>
+                        <option value="Effort modere">Effort modere</option>
+                        <option value="Effort eleve">Effort eleve</option>
+                    </select>
+                </div>
+
+                <!-- Motif insatisfaction -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Motif insatisfaction
+                    </label>
+                    <input type="text" name="motif_insatisfaction" class="form-control"
+                           placeholder="Si insatisfait"/>
+                </div>
+
+                <!-- Observations -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-uppercase">Observations</label>
+                    <textarea name="observations" class="form-control" rows="2"
+                              placeholder="Observations complementaires"></textarea>
+                </div>
+
+                <!-- Bouton -->
+                <div class="col-md-12 mt-2">
+                    <button type="submit" class="btn btn-sunu px-4 py-2">
+                        <i class="fas fa-save me-2"></i> Enregistrer
+                    </button>
+                    <a href="{% url 'liste' %}" class="btn btn-outline-secondary ms-2 px-4 py-2">
+                        <i class="fas fa-list me-2"></i> Voir la liste
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

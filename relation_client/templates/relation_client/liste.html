@@ -1,0 +1,127 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Liste Reponses — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Liste des Reponses</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+    </div>
+    <a href="{% url 'saisie' %}" class="btn btn-sunu">
+        <i class="fas fa-plus me-2"></i> Nouvelle saisie
+    </a>
+</div>
+
+<!-- FILTRES -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase">Canal</label>
+                <select name="canal" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="Call Center VIE">Call Center VIE</option>
+                    <option value="Call Center IARD">Call Center IARD</option>
+                    <option value="Espace Conseil VIE">Espace Conseil VIE</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase">Statut Appel</label>
+                <select name="statut" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="Joint">Joint</option>
+                    <option value="Injoignable">Injoignable</option>
+                    <option value="Pas de reponse">Pas de reponse</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase">NPS</label>
+                <select name="nps" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="Promoteur">Promoteur</option>
+                    <option value="Passif">Passif</option>
+                    <option value="Detracteur">Detracteur</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-sunu btn-sm w-100">
+                    <i class="fas fa-filter me-2"></i> Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TABLEAU -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i> {{ reponses.count }} reponse(s)</span>
+        <a href="{% url 'export' %}" class="btn btn-sm btn-outline-light">
+            <i class="fas fa-file-excel me-2"></i> Exporter Excel
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>CC</th>
+                        <th>Client</th>
+                        <th>Contact</th>
+                        <th>Canal</th>
+                        <th>Statut</th>
+                        <th>NPS</th>
+                        <th>CSAT</th>
+                        <th>CES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reponses %}
+                    <tr>
+                        <td>{{ r.date_appel }}</td>
+                        <td>{{ r.cc.username }}</td>
+                        <td>{{ r.nom_prenoms }}</td>
+                        <td>{{ r.contact }}</td>
+                        <td>{{ r.canal }}</td>
+                        <td>
+                            {% if r.statut_appel == 'Joint' %}
+                                <span class="badge bg-success">Joint</span>
+                            {% elif r.statut_appel == 'Injoignable' %}
+                                <span class="badge bg-danger">Injoignable</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Pas de reponse</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.categorie_nps == 'Promoteur' %}
+                                <span class="badge bg-success">Promoteur</span>
+                            {% elif r.categorie_nps == 'Passif' %}
+                                <span class="badge bg-secondary">Passif</span>
+                            {% elif r.categorie_nps == 'Detracteur' %}
+                                <span class="badge bg-danger">Detracteur</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.csat == 'Satisfait' %}
+                                <span class="badge bg-success">Satisfait</span>
+                            {% elif r.csat == 'Insatisfait' %}
+                                <span class="badge bg-danger">Insatisfait</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.ces }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            Aucune reponse enregistree
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
