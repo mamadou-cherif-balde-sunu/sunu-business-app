@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*m_e!%w62f+md3x*%=6%goxigq$@x$9^vz%^kleqpi#49xai6^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['sunu-business-app-1.onrender.com', 'sunu-business-app.onrender.com', 'localhost', '127.0.0.1', '.onrender.com']
+ALLOWED_HOSTS = ['sunu-business-app-2.onrender.com', 'sunu-business-app.onrender.com', 'localhost', '127.0.0.1', '.onrender.com']
 
 # Application definition
 
