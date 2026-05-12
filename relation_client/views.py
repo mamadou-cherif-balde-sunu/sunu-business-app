@@ -1,16 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import HttpResponse
 from datetime import date
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-
-# Import local pour éviter la boucle
 from .models import ReponseClient
-
-# ... reste de tes fonctions ...
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -118,9 +116,9 @@ def indicateurs(request):
             'nps': nps, 'csat': csat, 'ces': ces, 'total': t,
             'promoteurs': promoteurs, 'detracteurs': detracteurs,
             'passifs': passifs,
-            'joints':       qs.filter(statut_appel='Joint').count(),
-            'injoignables': qs.filter(statut_appel='Injoignable').count(),
-            'pas_reponse':  qs.filter(statut_appel='Pas de reponse').count(),
+            'joints':      qs.filter(statut_appel='Joint').count(),
+            'injoignables':qs.filter(statut_appel='Injoignable').count(),
+            'pas_reponse': qs.filter(statut_appel='Pas de reponse').count(),
         }
 
     tableau = [
@@ -172,3 +170,34 @@ def export(request):
     response['Content-Disposition'] = 'attachment; filename="SUNU_Reponses.xlsx"'
     wb.save(response)
     return response
+
+@staff_member_required(login_url='login')
+def gestion_utilisateurs(request):
+    if request.method == 'POST':
+        username   = request.POST.get('username')
+        password   = request.POST.get('password')
+        first_name = request.POST.get('first_name')
+        last_name  = request.POST.get('last_name')
+        email      = request.POST.get('email')
+        is_staff   = request.POST.get('is_staff') == 'on'
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f'Le nom utilisateur {username} existe deja.')
+        else:
+            User.objects.create_user(
+                username=username, password=password,
+                first_name=first_name, last_name=last_name,
+                email=email, is_staff=is_staff
+            )
+            messages.success(request, f'Compte {username} cree avec succes ✅')
+    utilisateurs = User.objects.all().order_by('-date_joined')
+    return render(request, 'relation_client/utilisateurs.html', {'utilisateurs': utilisateurs})
+
+@staff_member_required(login_url='login')
+def toggle_utilisateur(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if user != request.user:
+        user.is_active = not user.is_active
+        user.save()
+        statut = 'active' if user.is_active else 'desactive'
+        messages.success(request, f'Compte {user.username} {statut} ✅')
+    return redirect('gestion_utilisateurs')
