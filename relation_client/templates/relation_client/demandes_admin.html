@@ -1,0 +1,137 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Demandes de modification — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Demandes de modification</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+        <p class="text-muted small mt-2">Traitez les demandes de modification des employés</p>
+    </div>
+    <div class="d-flex gap-2">
+        <span class="badge" style="background:#856404;font-size:12px;padding:8px 14px">
+            {{ demandes_attente }} en attente
+        </span>
+        <span class="badge" style="background:#E30613;font-size:12px;padding:8px 14px">
+            {{ demandes.count }} total
+        </span>
+    </div>
+</div>
+
+<!-- FILTRES STATUT -->
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-3 align-items-center">
+            <label class="fw-semibold small text-uppercase" style="color:#999">Filtrer :</label>
+            <select name="statut" class="form-select form-select-sm" style="width:180px"
+                    onchange="this.form.submit()">
+                <option value="">Toutes</option>
+                <option value="En attente" {% if statut_filtre == 'En attente' %}selected{% endif %}>En attente</option>
+                <option value="Approuvee"  {% if statut_filtre == 'Approuvee' %}selected{% endif %}>Approuvées</option>
+                <option value="Rejetee"    {% if statut_filtre == 'Rejetee' %}selected{% endif %}>Rejetées</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- TABLEAU -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-inbox me-2"></i> Liste des demandes
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" style="font-size:13px">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Demandeur</th>
+                    <th>Client concerné</th>
+                    <th>Champ</th>
+                    <th>Valeur actuelle</th>
+                    <th>Nouvelle valeur</th>
+                    <th>Motif</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in demandes %}
+                <tr>
+                    <td style="color:#999;font-size:11px">
+                        {{ d.date_demande|date:"d/m/Y H:i" }}
+                    </td>
+                    <td>
+                        <div style="font-weight:500">
+                            {{ d.demandeur.get_full_name|default:d.demandeur.username }}
+                        </div>
+                    </td>
+                    <td>{{ d.saisie.nom_prenoms }}</td>
+                    <td>
+                        <span style="background:rgba(88,89,91,0.08);color:#58595B;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
+                            {{ d.champ }}
+                        </span>
+                    </td>
+                    <td style="color:#999">
+                        {% if d.champ == 'nom_prenoms' %}{{ d.saisie.nom_prenoms }}
+                        {% elif d.champ == 'contact' %}{{ d.saisie.contact }}
+                        {% elif d.champ == 'canal' %}{{ d.saisie.canal }}
+                        {% elif d.champ == 'statut_appel' %}{{ d.saisie.statut_appel }}
+                        {% elif d.champ == 'nps_score' %}{{ d.saisie.nps_score }}
+                        {% elif d.champ == 'categorie_nps' %}{{ d.saisie.categorie_nps }}
+                        {% elif d.champ == 'csat' %}{{ d.saisie.csat }}
+                        {% elif d.champ == 'ces' %}{{ d.saisie.ces }}
+                        {% elif d.champ == 'observations' %}{{ d.saisie.observations }}
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:600;color:#333">{{ d.nouvelle_valeur }}</td>
+                    <td style="color:#666;font-size:12px">{{ d.motif }}</td>
+                    <td>
+                        {% if d.statut == 'En attente' %}
+                            <span style="background:rgba(255,193,7,0.15);color:#856404;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
+                                En attente
+                            </span>
+                        {% elif d.statut == 'Approuvee' %}
+                            <span style="background:rgba(29,158,117,0.12);color:#0F6E56;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
+                                Approuvée
+                            </span>
+                        {% else %}
+                            <span style="background:rgba(227,6,19,0.10);color:#B8050F;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
+                                Rejetée
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.statut == 'En attente' %}
+                        <form method="post" class="d-flex gap-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="demande_id" value="{{ d.id }}"/>
+                            <button name="action" value="approuver"
+                                    class="btn btn-sm btn-outline-success"
+                                    style="font-size:11px">
+                                <i class="fas fa-check"></i> Approuver
+                            </button>
+                            <button name="action" value="rejeter"
+                                    class="btn btn-sm btn-outline-danger"
+                                    style="font-size:11px">
+                                <i class="fas fa-times"></i> Rejeter
+                            </button>
+                        </form>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x mb-3 d-block" style="color:#ddd"></i>
+                        <div style="color:#999">Aucune demande</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

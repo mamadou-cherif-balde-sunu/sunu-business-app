@@ -34,3 +34,24 @@ class ReponseClient(models.Model):
     class Meta:
         verbose_name = 'Reponse Client'
         ordering = ['-date_appel']
+        
+class DemandeModification(models.Model):
+    STATUT_CHOICES = [
+        ('En attente', 'En attente'),
+        ('Approuvee', 'Approuvee'),
+        ('Rejetee', 'Rejetee'),
+    ]
+    saisie        = models.ForeignKey(ReponseClient, on_delete=models.CASCADE)
+    demandeur     = models.ForeignKey(User, on_delete=models.CASCADE)
+    champ         = models.CharField(max_length=50)
+    nouvelle_valeur = models.TextField()
+    motif         = models.TextField()
+    statut        = models.CharField(max_length=20, choices=STATUT_CHOICES, default='En attente')
+    date_demande  = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.demandeur.username} - {self.champ} - {self.statut}"
+
+    class Meta:
+        ordering = ['-date_demande']
+        verbose_name = 'Demande de modification'

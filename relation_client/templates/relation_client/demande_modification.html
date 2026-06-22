@@ -1,0 +1,190 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Demande de modification — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Demande de modification</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+        <p class="text-muted small mt-2">
+            Client : <strong>{{ saisie.nom_prenoms }}</strong> —
+            Saisie par : <strong>{{ saisie.cc.username }}</strong>
+        </p>
+    </div>
+    <a href="{% url 'profil' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row g-4">
+
+    <!-- SAISIE ACTUELLE -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i> Saisie actuelle
+            </div>
+            <div class="card-body" style="font-size:13px;line-height:2.2">
+                <div><span style="color:#999">Client :</span> <strong>{{ saisie.nom_prenoms }}</strong></div>
+                <div><span style="color:#999">Contact :</span> {{ saisie.contact }}</div>
+                <div><span style="color:#999">Canal :</span> {{ saisie.canal }}</div>
+                <div><span style="color:#999">Date appel :</span> {{ saisie.date_appel|date:"d/m/Y" }}</div>
+                <div><span style="color:#999">Statut :</span> {{ saisie.statut_appel }}</div>
+                <div><span style="color:#999">NPS :</span> {{ saisie.categorie_nps }}</div>
+                <div><span style="color:#999">CSAT :</span> {{ saisie.csat }}</div>
+                <div><span style="color:#999">CES :</span> {{ saisie.ces }}</div>
+                <div><span style="color:#999">Observations :</span> {{ saisie.observations|default:"—" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULAIRE -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-paper-plane me-2"></i> Champs à modifier
+            </div>
+            <div class="card-body">
+
+                <div class="alert mb-4" style="background:rgba(227,6,19,0.06);border:0.5px solid rgba(227,6,19,0.2);border-radius:8px;font-size:13px;color:#58595B">
+                    <i class="fas fa-exclamation-triangle me-2" style="color:#E30613"></i>
+                    Ajoutez un ou plusieurs champs à modifier. Chaque champ sera traité individuellement par l'administrateur.
+                </div>
+
+                <form method="post" id="formDemande">
+                    {% csrf_token %}
+
+                    <!-- Motif global -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase">Motif général de la demande</label>
+                        <textarea name="motif_global" class="form-control" rows="2"
+                                  placeholder="Expliquez pourquoi vous souhaitez modifier cette saisie..."
+                                  required></textarea>
+                    </div>
+
+                    <!-- Conteneur des lignes de modification -->
+                    <div id="lignes-container">
+                        <div class="ligne-modification card mb-3" style="border:1px solid #eee;border-radius:8px;">
+                            <div class="card-body py-3">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small text-uppercase">Champ à modifier</label>
+                                        <select name="champ[]" class="form-select champ-select" required>
+                                            <option value="">-- Choisir --</option>
+                                            <option value="nom_prenoms">Nom et Prénoms</option>
+                                            <option value="contact">Contact</option>
+                                            <option value="canal">Canal</option>
+                                            <option value="statut_appel">Statut Appel</option>
+                                            <option value="nps_score">Score NPS</option>
+                                            <option value="categorie_nps">Catégorie NPS</option>
+                                            <option value="csat">CSAT</option>
+                                            <option value="ces">CES</option>
+                                            <option value="observations">Observations</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold small text-uppercase">Nouvelle valeur</label>
+                                        <div class="valeur-container">
+                                            <input type="text" name="nouvelle_valeur[]"
+                                                   class="form-control valeur-input"
+                                                   placeholder="Choisissez d'abord un champ"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm supprimer-ligne" style="display:none">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bouton ajouter -->
+                    <button type="button" id="ajouter-ligne" class="btn btn-outline-secondary btn-sm mb-4">
+                        <i class="fas fa-plus me-1"></i> Ajouter un autre champ
+                    </button>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-sunu px-4">
+                            <i class="fas fa-paper-plane me-2"></i> Envoyer la demande
+                        </button>
+                        <a href="{% url 'profil' %}" class="btn btn-outline-secondary px-4">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Définition des valeurs par champ
+const champOptions = {
+    'nom_prenoms':   { type: 'text',   placeholder: 'Ex: Jean Dupont' },
+    'contact':       { type: 'text',   placeholder: 'Ex: 07XXXXXXXX' },
+    'canal':         { type: 'select', options: ['Call Center VIE', 'Call Center IARD', 'Espace Conseil VIE'] },
+    'statut_appel':  { type: 'select', options: ['Joint', 'Injoignable', 'Pas de reponse'] },
+    'nps_score':     { type: 'number', placeholder: '0 à 10', min: 0, max: 10 },
+    'categorie_nps': { type: 'select', options: ['Promoteur', 'Passif', 'Detracteur'] },
+    'csat':          { type: 'select', options: ['Satisfait', 'Insatisfait'] },
+    'ces':           { type: 'select', options: ['Effort faible', 'Effort modere', 'Effort eleve'] },
+    'observations':  { type: 'textarea', placeholder: 'Nouvelle observation...' },
+};
+
+function mettreAJourValeur(select) {
+    const champ = select.value;
+    const container = select.closest('.ligne-modification').querySelector('.valeur-container');
+    const config = champOptions[champ];
+
+    if (!config) {
+        container.innerHTML = '<input type="text" name="nouvelle_valeur[]" class="form-control valeur-input" placeholder="Choisissez d\'abord un champ" disabled/>';
+        return;
+    }
+
+    if (config.type === 'select') {
+        let options = config.options.map(o => `<option value="${o}">${o}</option>`).join('');
+        container.innerHTML = `<select name="nouvelle_valeur[]" class="form-select valeur-input" required><option value="">-- Choisir --</option>${options}</select>`;
+    } else if (config.type === 'number') {
+        container.innerHTML = `<input type="number" name="nouvelle_valeur[]" class="form-control valeur-input" placeholder="${config.placeholder}" min="${config.min}" max="${config.max}" required/>`;
+    } else if (config.type === 'textarea') {
+        container.innerHTML = `<textarea name="nouvelle_valeur[]" class="form-control valeur-input" rows="2" placeholder="${config.placeholder}" required></textarea>`;
+    } else {
+        container.innerHTML = `<input type="text" name="nouvelle_valeur[]" class="form-control valeur-input" placeholder="${config.placeholder}" required/>`;
+    }
+}
+
+// Écouter les changements sur les selects existants
+document.querySelectorAll('.champ-select').forEach(select => {
+    select.addEventListener('change', function() { mettreAJourValeur(this); });
+});
+
+// Cloner une ligne
+document.getElementById('ajouter-ligne').addEventListener('click', function() {
+    const container = document.getElementById('lignes-container');
+    const premiere  = container.querySelector('.ligne-modification');
+    const clone     = premiere.cloneNode(true);
+
+    // Réinitialiser le clone
+    clone.querySelector('.champ-select').value = '';
+    clone.querySelector('.valeur-container').innerHTML =
+        '<input type="text" name="nouvelle_valeur[]" class="form-control valeur-input" placeholder="Choisissez d\'abord un champ" disabled/>';
+    clone.querySelector('.supprimer-ligne').style.display = 'inline-block';
+
+    // Écouter le changement sur le nouveau select
+    clone.querySelector('.champ-select').addEventListener('change', function() {
+        mettreAJourValeur(this);
+    });
+
+    // Bouton supprimer
+    clone.querySelector('.supprimer-ligne').addEventListener('click', function() {
+        clone.remove();
+    });
+
+    container.appendChild(clone);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Modifier une saisie — SUNU Business{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 style="color:#58595B;font-weight:600">Modifier la saisie</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
+        <p class="text-muted small mt-2">
+            Client : <strong>{{ saisie.nom_prenoms }}</strong> —
+            Saisie par : <strong>{{ saisie.cc.username }}</strong>
+        </p>
+    </div>
+    <a href="{% url 'liste' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit me-2"></i> Modification — Autorisation administrateur requise
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                
+                <!-- Date enregistrement -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Date enregistrement</label>
+                    <input type="date" name="date_enregistrement" class="form-control"
+                           value="{{ saisie.date_enregistrement|date:'Y-m-d' }}" required/>
+                </div>
+
+                <!-- Canal -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Canal</label>
+                    <select name="canal" id="canal" class="form-select" onchange="gererSousCanal()" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="Appel(1363)" {% if saisie.canal == "Appel(1363)" %}selected{% endif %}>Appel(1363)</option>
+                        <option value="QR CODE" {% if saisie.canal == "QR CODE" %}selected{% endif %}>QR CODE</option>
+                        <option value="Mail" {% if saisie.canal == "Mail" %}selected{% endif %}>Mail</option>
+                        <option value="Presentiel" {% if saisie.canal == "Presentiel" %}selected{% endif %}>Presentiel</option>
+                    </select>
+                </div>
+
+                <!-- Sous-canal dynamique -->
+                <div class="col-md-4" id="div_sous_canal" style="display: none;">
+                    <label class="form-label fw-semibold small text-uppercase" id="label_sous_canal">Type</label>
+                    <select name="sous_canal" id="sous_canal" class="form-select">
+                        <!-- Géré par JS au chargement -->
+                    </select>
+                </div>
+
+                <!-- Date appel -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Date appel</label>
+                    <input type="date" name="date_appel" class="form-control"
+                           value="{{ saisie.date_appel|date:'Y-m-d' }}" required/>
+                </div>
+
+                <!-- Nom et Prénoms -->
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-uppercase">Nom et Prenoms</label>
+                    <input type="text" name="nom_prenoms" class="form-control"
+                           value="{{ saisie.nom_prenoms }}" required/>
+                </div>
+
+                <!-- Contact (chiffres uniquement) -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">Contact</label>
+                    <input type="tel" name="contact" class="form-control" value="{{ saisie.contact }}"
+                           placeholder="" oninput="this.value = this.value.replace(/[^0-9]/g, '');"/>
+                </div>
+
+                <!-- N° Police -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">N° Police</label>
+                    <input type="text" name="numero_police" class="form-control" value="{{ saisie.numero_police }}"/>
+                </div>
+
+                <!-- Objet de la visite -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-uppercase">Objet de la visite</label>
+                    <select name="objet_visite" id="objet_visite" class="form-select" onchange="gererObjetAutre()" required>
+                        <option value="">-- Choisir l'objet --</option>
+                        <option value="Rachat total" {% if saisie.objet_visite == "Rachat total" %}selected{% endif %}>Rachat total</option>
+                        <option value="Rachat partiel" {% if saisie.objet_visite == "Rachat partiel" %}selected{% endif %}>Rachat partiel</option>
+                        <option value="Déclaration de sinistre" {% if saisie.objet_visite == "Déclaration de sinistre" %}selected{% endif %}>Déclaration de sinistre</option>
+                        <option value="Payement" {% if saisie.objet_visite == "Payement" %}selected{% endif %}>Payement</option>
+                        <option value="Autre" id="option_autre">Autre</option>
+                    </select>
+
+                    <div id="div_objet_autre" class="mt-2" style="display: none;">
+                        <input type="text" name="objet_visite_autre" id="objet_visite_autre" class="form-control" placeholder="Veuillez préciser l'objet de la visite"/>
+                    </div>
+                </div>
+
+                <!-- Statut Appel -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Statut Appel</label>
+                    <select name="statut_appel" class="form-select" required>
+                        <option value="Joint" {% if saisie.statut_appel == 'Joint' %}selected{% endif %}>Joint</option>
+                        <option value="Injoignable" {% if saisie.statut_appel == 'Injoignable' %}selected{% endif %}>Injoignable</option>
+                        <option value="Pas de reponse" {% if saisie.statut_appel == 'Pas de reponse' %}selected{% endif %}>Pas de reponse</option>
+                    </select>
+                </div>
+
+                <!-- Catégorie NPS -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Categorie NPS</label>
+                    <select name="categorie_nps" id="categorie_nps" class="form-select" onchange="changerValeurNPS()">
+                        <option value="">-- Choisir --</option>
+                        <option value="Promoteur" {% if saisie.categorie_nps == 'Promoteur' %}selected{% endif %}>Promoteur</option>
+                        <option value="Passif" {% if saisie.categorie_nps == 'Passif' %}selected{% endif %}>Passif</option>
+                        <option value="Detracteur" {% if saisie.categorie_nps == 'Detracteur' %}selected{% endif %}>Détracteur</option>
+                    </select>
+                </div>
+
+                <!-- Valeur NPS -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">Valeur NPS</label>
+                    <input type="text" name="nps_score" id="nps_score" class="form-control" readonly/>
+                </div>
+
+                <!-- CSAT -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">CSAT</label>
+                    <select name="csat" id="csat" class="form-select" onchange="gererMotifInsatisfaction()">
+                        <option value="">-- Choisir --</option>
+                        <option value="Satisfait" {% if saisie.csat == 'Satisfait' %}selected{% endif %}>Satisfait</option>
+                        <option value="Insatisfait" {% if saisie.csat == 'Insatisfait' %}selected{% endif %}>Insatisfait</option>
+                    </select>
+                </div>
+
+                <!-- CES -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">CES</label>
+                    <select name="ces" class="form-select">
+                        <option value="">-- Choisir --</option>
+                        <option value="Effort faible" {% if saisie.ces == 'Effort faible' %}selected{% endif %}>Effort faible</option>
+                        <option value="Effort modere" {% if saisie.ces == 'Effort modere' %}selected{% endif %}>Effort modere</option>
+                        <option value="Effort eleve" {% if saisie.ces == 'Effort eleve' %}selected{% endif %}>Effort eleve</option>
+                    </select>
+                </div>
+
+                <!-- Motif d'insatisfaction -->
+                <div class="col-md-4" id="div_motif_insatisfaction" style="display: none;">
+                    <label class="form-label fw-semibold small text-uppercase">Motif insatisfaction</label>
+                    <input type="text" name="motif_insatisfaction" id="motif_insatisfaction" class="form-control" 
+                           value="{{ saisie.motif_insatisfaction }}" placeholder="Motif"/>
+                </div>
+
+                <!-- Observations -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-uppercase">Observations</label>
+                    <textarea name="observations" class="form-control" rows="2">{{ saisie.observations }}</textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-md-12 mt-2">
+                    <button type="submit" class="btn btn-sunu px-4">
+                        <i class="fas fa-save me-2"></i> Enregistrer les modifications
+                    </button>
+                    <a href="{% url 'liste' %}" class="btn btn-outline-secondary ms-2 px-4">
+                        Annuler
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Sauvegarde de la valeur initiale du sous-canal venant de la BDD
+const sousCanalInitial = "{{ saisie.sous_canal|default:'' }}";
+const objetInitial = "{{ saisie.objet_visite|default:'' }}";
+
+function gererSousCanal() {
+    let canal = document.getElementById("canal").value;
+    let divSousCanal = document.getElementById("div_sous_canal");
+    let labelSousCanal = document.getElementById("label_sous_canal");
+    let selectSousCanal = document.getElementById("sous_canal");
+
+    selectSousCanal.innerHTML = "";
+
+    if (canal === "Appel(1363)") {
+        divSousCanal.style.display = "block";
+        labelSousCanal.innerText = "Type de Centre d'appel";
+        selectSousCanal.required = true;
+        
+        selectSousCanal.options.add(new Option("-- Choisir --", ""));
+        selectSousCanal.options.add(new Option("Call center Vie", "Call center Vie"));
+        selectSousCanal.options.add(new Option("Call center IARD", "Call center IARD"));
+    } 
+    else if (canal === "Presentiel") {
+        divSousCanal.style.display = "block";
+        labelSousCanal.innerText = "Type de Présentiel";
+        selectSousCanal.required = true;
+
+        selectSousCanal.options.add(new Option("-- Choisir --", ""));
+        selectSousCanal.options.add(new Option("Espace conseil", "Espace conseil"));
+    } 
+    else {
+        divSousCanal.style.display = "none";
+        selectSousCanal.required = false;
+    }
+
+    // Sélection de la valeur existante si elle correspond
+    if (sousCanalInitial && (canal === "Appel(1363)" || canal === "Presentiel")) {
+        for (let option of selectSousCanal.options) {
+            if (option.value === sousCanalInitial) {
+                option.selected = true;
+            }
+        }
+    }
+}
+
+function gererObjetAutre() {
+    let selectObjet = document.getElementById("objet_visite");
+    let divObjetAutre = document.getElementById("div_objet_autre");
+    let inputObjetAutre = document.getElementById("objet_visite_autre");
+
+    if (selectObjet.value === "Autre") {
+        divObjetAutre.style.display = "block";
+        inputObjetAutre.required = true;
+    } else {
+        divObjetAutre.style.display = "none";
+        inputObjetAutre.required = false;
+    }
+}
+
+function changerValeurNPS(){
+    let categorie = document.getElementById("categorie_nps").value;
+    let valeur = "";
+
+    if(categorie === "Promoteur"){
+        valeur = "9 à 10";
+    }
+    else if(categorie === "Passif"){
+        valeur = "7 à 8";
+    }
+    else if(categorie === "Detracteur"){
+        valeur = "0 à 6";
+    }
+
+    document.getElementById("nps_score").value = valeur;
+}
+
+function gererMotifInsatisfaction() {
+    let csatValue = document.getElementById("csat").value;
+    let divMotif = document.getElementById("div_motif_insatisfaction");
+    let inputMotif = document.getElementById("motif_insatisfaction");
+
+    if (csatValue === "Insatisfait") {
+        divMotif.style.display = "block";
+        inputMotif.required = true;
+    } else {
+        divMotif.style.display = "none";
+        inputMotif.required = false;
+    }
+}
+
+// Initialisation au chargement de la page pour ré-afficher les états corrects
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialiser le sous-canal
+    gererSousCanal();
+
+    // 2. Initialiser l'objet s'il s'agit d'une valeur personnalisée ("Autre")
+    let selectObjet = document.getElementById("objet_visite");
+    if (objetInitial && selectObjet.value === "") {
+        document.getElementById("option_autre").selected = true;
+        document.getElementById("objet_visite_autre").value = objetInitial;
+        gererObjetAutre();
+    }
+
+    // 3. Initialiser la valeur NPS
+    changerValeurNPS();
+
+    // 4. Initialiser l'affichage du motif d'insatisfaction
+    gererMotifInsatisfaction();
+});
+</script>
+{% endblock %}

@@ -14,55 +14,92 @@
     <div class="card-header">
         <i class="fas fa-edit me-2"></i> Nouveau enregistrement
     </div>
+
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
-            <div class="row g-3">
 
-                <!-- Informations generales -->
+            <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">Date enregistrement</label>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Date enregistrement
+                    </label>
                     <input type="date" name="date_enregistrement" class="form-control" required/>
                 </div>
+
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">Canal</label>
-                    <select name="canal" class="form-select" required>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Canal
+                    </label>
+                    <select name="canal" id="canal" class="form-select" onchange="gererSousCanal()" required>
                         <option value="">-- Choisir --</option>
-                        <option value="Call Center VIE">Call Center VIE</option>
-                        <option value="Call Center IARD">Call Center IARD</option>
-                        <option value="Espace Conseil VIE">Espace Conseil VIE</option>
+                        <option value="Appel(1363)">Appel(1363)</option>
+                        <option value="QR CODE">QR CODE</option>
+                        <option value="Mail">Mail</option>
+                        <option value="Presentiel">Presentiel</option>
                     </select>
                 </div>
+
+                <div class="col-md-4" id="div_sous_canal" style="display: none;">
+                    <label class="form-label fw-semibold small text-uppercase" id="label_sous_canal">
+                        Type
+                    </label>
+                    <select name="sous_canal" id="sous_canal" class="form-select">
+                        </select>
+                </div>
+
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">Date appel</label>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Date appel
+                    </label>
                     <input type="date" name="date_appel" class="form-control" required/>
                 </div>
 
-                <!-- Informations client -->
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold small text-uppercase">Nom et Prenoms</label>
-                    <input type="text" name="nom_prenoms" class="form-control"
-                           placeholder="Nom complet du client" required/>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold small text-uppercase">Contact</label>
-                    <input type="text" name="contact" class="form-control"
-                           placeholder="Numero de telephone"/>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold small text-uppercase">N° Police</label>
-                    <input type="text" name="numero_police" class="form-control"
-                           placeholder="N° Police"/>
-                </div>
-                <div class="col-md-12">
-                    <label class="form-label fw-semibold small text-uppercase">Objet de la visite</label>
-                    <input type="text" name="objet_visite" class="form-control"
-                           placeholder="Motif de l'appel"/>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Nom et Prenoms
+                    </label>
+                    <input type="text" name="nom_prenoms" class="form-control" placeholder="Nom complet du client" required/>
                 </div>
 
-                <!-- Statut appel -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Contact
+                    </label>
+                    <input type="tel" name="contact" class="form-control" 
+                           placeholder="" 
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '');"/>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        N° Police
+                    </label>
+                    <input type="text" name="numero_police" class="form-control" placeholder="N° Police"/>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Objet de la visite
+                    </label>
+                    <select name="objet_visite" id="objet_visite" class="form-select" onchange="gererObjetAutre()" required>
+                        <option value="">-- Choisir l'objet --</option>
+                        <option value="Rachat total">Rachat total</option>
+                        <option value="Rachat partiel">Rachat partiel</option>
+                        <option value="Déclaration de sinistre">Déclaration de sinistre</option>
+                        <option value="Payement">Payement</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+
+                    <div id="div_objet_autre" class="mt-2" style="display: none;">
+                        <input type="text" name="objet_visite_autre" id="objet_visite_autre" class="form-control" placeholder="Veuillez préciser l'objet de la visite"/>
+                    </div>
+                </div>
+
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">Statut Appel</label>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Statut Appel
+                    </label>
                     <select name="statut_appel" class="form-select" required>
                         <option value="">-- Choisir --</option>
                         <option value="Joint">Joint</option>
@@ -71,40 +108,40 @@
                     </select>
                 </div>
 
-                <!-- NPS -->
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">
-                        Score NPS (0 a 10)
-                    </label>
-                    <input type="number" name="nps_score" class="form-control"
-                           min="0" max="10" placeholder="0 a 10"/>
-                    <div class="form-text">Ou choisir directement ci-dessous</div>
-                </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold small text-uppercase">
                         Categorie NPS (direct)
                     </label>
-                    <select name="categorie_nps" class="form-select">
+                    <select name="categorie_nps" id="categorie_nps" class="form-select" onchange="changerValeurNPS()">
                         <option value="">-- Choisir --</option>
-                        <option value="Promoteur">Promoteur (9-10)</option>
-                        <option value="Passif">Passif (7-8)</option>
-                        <option value="Detracteur">Detracteur (0-6)</option>
+                        <option value="Promoteur">Promoteur</option>
+                        <option value="Passif">Passif</option>
+                        <option value="Detracteur">Détracteur</option>
                     </select>
                 </div>
 
-                <!-- CSAT -->
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">CSAT</label>
-                    <select name="csat" class="form-select">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Valeur NPS
+                    </label>
+                    <input type="text" name="nps_score" id="nps_score" class="form-control" placeholder="Choisir une catégorie" readonly/>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-uppercase">
+                        CSAT
+                    </label>
+                    <select name="csat" id="csat" class="form-select" onchange="gererMotifInsatisfaction()">
                         <option value="">-- Choisir --</option>
                         <option value="Satisfait">Satisfait</option>
                         <option value="Insatisfait">Insatisfait</option>
                     </select>
                 </div>
 
-                <!-- CES -->
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">CES</label>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        CES
+                    </label>
                     <select name="ces" class="form-select">
                         <option value="">-- Choisir --</option>
                         <option value="Effort faible">Effort faible</option>
@@ -113,23 +150,20 @@
                     </select>
                 </div>
 
-                <!-- Motif insatisfaction -->
-                <div class="col-md-4">
+                <div class="col-md-4" id="div_motif_insatisfaction" style="display: none;">
                     <label class="form-label fw-semibold small text-uppercase">
                         Motif insatisfaction
                     </label>
-                    <input type="text" name="motif_insatisfaction" class="form-control"
-                           placeholder="Si insatisfait"/>
+                    <input type="text" name="motif_insatisfaction" id="motif_insatisfaction" class="form-control" placeholder="Motif"/>
                 </div>
 
-                <!-- Observations -->
                 <div class="col-md-12">
-                    <label class="form-label fw-semibold small text-uppercase">Observations</label>
-                    <textarea name="observations" class="form-control" rows="2"
-                              placeholder="Observations complementaires"></textarea>
+                    <label class="form-label fw-semibold small text-uppercase">
+                        Observations
+                    </label>
+                    <textarea name="observations" class="form-control" rows="2" placeholder="Observations complementaires"></textarea>
                 </div>
 
-                <!-- Bouton -->
                 <div class="col-md-12 mt-2">
                     <button type="submit" class="btn btn-sunu px-4 py-2">
                         <i class="fas fa-save me-2"></i> Enregistrer
@@ -138,9 +172,89 @@
                         <i class="fas fa-list me-2"></i> Voir la liste
                     </a>
                 </div>
-
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function gererSousCanal() {
+    let canal = document.getElementById("canal").value;
+    let divSousCanal = document.getElementById("div_sous_canal");
+    let labelSousCanal = document.getElementById("label_sous_canal");
+    let selectSousCanal = document.getElementById("sous_canal");
+
+    selectSousCanal.innerHTML = "";
+
+    if (canal === "Appel(1363)") {
+        divSousCanal.style.display = "block";
+        labelSousCanal.innerText = "Type de Centre d'appel";
+        selectSousCanal.required = true;
+        
+        selectSousCanal.options.add(new Option("-- Choisir --", ""));
+        selectSousCanal.options.add(new Option("Call center Vie", "Call center Vie"));
+        selectSousCanal.options.add(new Option("Call center IARD", "Call center IARD"));
+    } 
+    else if (canal === "Presentiel") {
+        divSousCanal.style.display = "block";
+        labelSousCanal.innerText = "Type de Présentiel";
+        selectSousCanal.required = true;
+
+        selectSousCanal.options.add(new Option("-- Choisir --", ""));
+        selectSousCanal.options.add(new Option("Espace conseil", "Espace conseil"));
+    } 
+    else {
+        divSousCanal.style.display = "none";
+        selectSousCanal.required = false;
+    }
+}
+
+function gererObjetAutre() {
+    let objetVisite = document.getElementById("objet_visite").value;
+    let divObjetAutre = document.getElementById("div_objet_autre");
+    let inputObjetAutre = document.getElementById("objet_visite_autre");
+
+    if (objetVisite === "Autre") {
+        divObjetAutre.style.display = "block";
+        inputObjetAutre.required = true;
+        inputObjetAutre.focus();
+    } else {
+        divObjetAutre.style.display = "none";
+        inputObjetAutre.required = false;
+        inputObjetAutre.value = "";
+    }
+}
+
+function changerValeurNPS(){
+    let categorie = document.getElementById("categorie_nps").value;
+    let valeur = "";
+
+    if(categorie === "Promoteur"){
+        valeur = "9 à 10";
+    }
+    else if(categorie === "Passif"){
+        valeur = "7 à 8";
+    }
+    else if(categorie === "Detracteur"){
+        valeur = "0 à 6";
+    }
+
+    document.getElementById("nps_score").value = valeur;
+}
+
+function gererMotifInsatisfaction() {
+    let csatValue = document.getElementById("csat").value;
+    let divMotif = document.getElementById("div_motif_insatisfaction");
+    let inputMotif = document.getElementById("motif_insatisfaction");
+
+    if (csatValue === "Insatisfait") {
+        divMotif.style.display = "block";
+        inputMotif.required = true;
+    } else {
+        divMotif.style.display = "none";
+        inputMotif.required = false;
+        inputMotif.value = "";
+    }
+}
+</script>
 {% endblock %}

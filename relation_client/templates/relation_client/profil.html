@@ -1,0 +1,356 @@
+{% extends 'relation_client/base.html' %}
+
+{% block title %}Mon Profil — SUNU Business{% endblock %}
+
+{% block content %}
+<style>
+.profile-hero {
+    background: linear-gradient(135deg, #E30613 0%, #8B0000 100%);
+    border-radius: 14px;
+    padding: 32px;
+    color: white;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+}
+.profile-hero::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+}
+.profile-hero::before {
+    content: '';
+    position: absolute;
+    right: 60px; bottom: -60px;
+    width: 150px; height: 150px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+}
+.avatar {
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.15);
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    backdrop-filter: blur(10px);
+}
+.stat-pill {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+.stat-pill .val { font-size: 24px; font-weight: 700; line-height: 1; }
+.stat-pill .lbl { font-size: 10px; opacity: .7; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+.info-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid #F0F0F0;
+}
+.info-row:last-child { border-bottom: none; }
+.info-icon {
+    width: 36px; height: 36px;
+    background: rgba(227,6,19,0.08);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #E30613; font-size: 14px; flex-shrink: 0;
+}
+.info-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: .04em; }
+.info-val { font-size: 13px; font-weight: 500; color: #333; margin-top: 1px; }
+.activity-bar {
+    height: 6px; border-radius: 3px;
+    background: #F0F0F0; overflow: hidden;
+}
+.activity-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #E30613, #FF6B6B);
+    transition: width 1s ease;
+}
+.badge-nps-p { background: rgba(29,158,117,0.12); color: #0F6E56; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-nps-d { background: rgba(227,6,19,0.10); color: #B8050F; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-nps-n { background: rgba(88,89,91,0.10); color: #58595B; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+</style>
+
+<!-- HERO PROFIL -->
+<div class="profile-hero">
+    <div class="d-flex align-items-center gap-4 mb-4">
+        <div class="avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div>
+            <h4 style="font-weight:700;margin-bottom:4px;font-size:22px">
+                {{ request.user.get_full_name|default:request.user.username }}
+            </h4>
+            <div style="opacity:.7;font-size:13px;margin-bottom:8px">
+                {{ request.user.email|default:"Email non renseigne" }}
+            </div>
+            {% if request.user.is_superuser %}
+                <span style="background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">
+                    ⭐ Super Administrateur
+                </span>
+            {% elif request.user.is_staff %}
+                <span style="background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">
+                    🔑 Administrateur
+                </span>
+            {% else %}
+                <span style="background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">
+                    👤 Charge de Clientele
+                </span>
+            {% endif %}
+        </div>
+        <div class="ms-auto text-end" style="opacity:.7;font-size:12px">
+            <div>Membre depuis</div>
+            <div style="font-weight:600;font-size:14px;opacity:1">
+                {{ request.user.date_joined|date:"d/m/Y" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS RAPIDES -->
+    <div class="row g-3">
+        <div class="col">
+            <div class="stat-pill">
+                <div class="val">{{ total }}</div>
+                <div class="lbl">Saisies totales</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-pill">
+                <div class="val">{{ stats.nps }}%</div>
+                <div class="lbl">Mon NPS</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-pill">
+                <div class="val">{{ stats.csat }}%</div>
+                <div class="lbl">Mon CSAT</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-pill">
+                <div class="val">{{ stats.ces }}%</div>
+                <div class="lbl">Mon CES</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- INFOS PERSONNELLES -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-id-card me-2"></i> Informations personnelles
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="info-label">Nom utilisateur</div>
+                        <div class="info-val">{{ request.user.username }}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-signature"></i></div>
+                    <div>
+                        <div class="info-label">Nom complet</div>
+                        <div class="info-val">{{ request.user.get_full_name|default:"Non renseigne" }}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-envelope"></i></div>
+                    <div>
+                        <div class="info-label">Email</div>
+                        <div class="info-val">{{ request.user.email|default:"Non renseigne" }}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-calendar-plus"></i></div>
+                    <div>
+                        <div class="info-label">Date d'inscription</div>
+                        <div class="info-val">{{ request.user.date_joined|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-clock"></i></div>
+                    <div>
+                        <div class="info-label">Derniere connexion</div>
+                        <div class="info-val">{{ request.user.last_login|date:"d/m/Y H:i"|default:"Inconnue" }}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div>
+                        <div class="info-label">Statut du compte</div>
+                        <div class="info-val">
+                            {% if request.user.is_active %}
+                                <span style="color:#1D9E75;font-weight:600">● Actif</span>
+                            {% else %}
+                                <span style="color:#E30613;font-weight:600">● Inactif</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITE -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i> Mon activite
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#666">Saisies effectuees</span>
+                        <span style="font-size:12px;font-weight:600">{{ total }}</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill" style="width:{% if total > 0 %}{% widthratio total 50 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#666">Taux CSAT</span>
+                        <span style="font-size:12px;font-weight:600">{{ stats.csat }}%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill" style="width:{{ stats.csat }}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#666">Objectif NPS (50%)</span>
+                        <span style="font-size:12px;font-weight:600;color:{% if stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %}">
+                            {{ stats.nps }}%
+                        </span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill"
+                             style="width:{% if stats.nps > 0 %}{{ stats.nps }}{% else %}0{% endif %}%;
+                                    background:{% if stats.nps >= 50 %}linear-gradient(90deg,#1D9E75,#2ECC71){% else %}linear-gradient(90deg,#E30613,#FF6B6B){% endif %}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORIQUE SAISIES -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-history me-2"></i> Historique de mes saisies</span>
+                <a href="{% url 'saisie' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-plus me-1"></i> Nouvelle saisie
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date enreg.</th>
+                                <th>Date appel</th>
+                                <th>Client</th>
+                                <th>Canal</th>
+                                <th>Statut</th>
+                                <th>NPS</th>
+                                <th>CSAT</th>
+                                <th>CES</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in mes_reponses %}
+                            <tr>
+                                <td style="font-size:12px;color:#999">
+                                    {{ r.date_enregistrement|date:"d/m/Y" }}
+                                </td>
+                                <td style="font-size:12px">
+                                    {{ r.date_appel|date:"d/m/Y" }}
+                                </td>
+                                <td>
+                                    <div style="font-weight:500;font-size:13px">{{ r.nom_prenoms }}</div>
+                                    <div style="font-size:11px;color:#999">{{ r.contact }}</div>
+                                </td>
+                                <td>
+                                    <span style="background:{% if 'VIE' in r.canal %}rgba(29,158,117,0.12);color:#0F6E56{% else %}rgba(46,109,164,0.12);color:#185FA5{% endif %};padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600">
+                                        {{ r.canal }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if r.statut_appel == 'Joint' %}
+                                        <span style="background:rgba(29,158,117,0.12);color:#0F6E56;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">Joint</span>
+                                    {% elif r.statut_appel == 'Injoignable' %}
+                                        <span style="background:rgba(227,6,19,0.10);color:#B8050F;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">Injoignable</span>
+                                    {% else %}
+                                        <span style="background:rgba(255,193,7,0.15);color:#856404;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">Pas de rep.</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.categorie_nps == 'Promoteur' %}
+                                        <span class="badge-nps-p">Promoteur</span>
+                                    {% elif r.categorie_nps == 'Passif' %}
+                                        <span class="badge-nps-n">Passif</span>
+                                    {% elif r.categorie_nps == 'Detracteur' %}
+                                        <span class="badge-nps-d">Detracteur</span>
+                                    {% else %}
+                                        <span style="color:#ccc">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.csat == 'Satisfait' %}
+                                        <span style="color:#1D9E75;font-weight:600;font-size:12px">✓ Satisfait</span>
+                                    {% elif r.csat == 'Insatisfait' %}
+                                        <span style="color:#E30613;font-weight:600;font-size:12px">✗ Insatisfait</span>
+                                    {% else %}
+                                        <span style="color:#ccc">—</span>
+                                    {% endif %}
+                                </td>
+                                <td style="font-size:12px;font-weight:500">
+                                    {{ r.ces|default:"—" }}
+                                </td>
+                                <td>
+                                    {% if request.user.is_staff %}
+                                        <a href="{% url 'modifier_saisie' r.id %}"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           style="font-size:11px">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'demande_modification' r.id %}"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           style="font-size:11px">
+                                            <i class="fas fa-edit"></i> Demander modif.
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x mb-3 d-block" style="color:#ddd"></i>
+                                    <div style="color:#999;font-size:14px">Aucune saisie pour le moment</div>
+                                    <a href="{% url 'saisie' %}" class="btn btn-sunu btn-sm mt-3">
+                                        <i class="fas fa-plus me-1"></i> Faire ma premiere saisie
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -44,12 +44,12 @@
             SUNU <span>Business · Relation Client</span>
         </a>
         <div class="ms-auto d-flex align-items-center gap-3">
-            <span class="text-white-50 small">
+            <a href="{% url 'profil' %}" class="text-white-50 small text-decoration-none">
                 <i class="fas fa-user-circle me-1"></i>
                 {{ request.user.get_full_name|default:request.user.username }}
-            </span>
+            </a>
             <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
+                <i class="fas fa-sign-out-alt"></i> Deconnexion
             </a>
         </div>
     </div>
@@ -96,7 +96,19 @@
                         <i class="fas fa-users me-2"></i> Utilisateurs
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'demandes_admin' %}active{% endif %}"
+                       href="{% url 'demandes_admin' %}">
+                        <i class="fas fa-inbox me-2"></i> Demandes
+                    </a>
+                </li>
                 {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'profil' %}active{% endif %}"
+                       href="{% url 'profil' %}">
+                        <i class="fas fa-user me-2"></i> Mon Profil
+                    </a>
+                </li>
             </ul>
         </div>
 
