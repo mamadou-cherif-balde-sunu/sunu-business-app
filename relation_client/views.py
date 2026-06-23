@@ -4,11 +4,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from django.conf import settings
 from datetime import date, timedelta
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
+import os
+
 from .models import ReponseClient, DemandeModification
+from .utils_report import get_week_range, get_month_range, label_week, label_month, get_period_stats
+from .pptx_report import generate_report
 
 # ==========================================
 # 1. AUTHENTIFICATION
@@ -57,7 +62,7 @@ def dashboard(request):
 
     context = {
         'global_stats': calc(reponses),
-        'vie_stats':    calc(reponses.filter(sous_canal__icontains='Vie')),
+        'vie_stats':    calc(reponses.filter(sous_canal__icontains='VIE')),
         'iard_stats':   calc(reponses.filter(sous_canal__icontains='IARD')),
         'total':        total,
         'joints':       reponses.filter(statut_appel='Joint').count(),
@@ -92,7 +97,7 @@ def indicateurs(request):
         }
 
     tableau = [
-        {'perimetre': 'VIE',    'stats': calc(reponses.filter(sous_canal__icontains='Vie'))},
+        {'perimetre': 'VIE',    'stats': calc(reponses.filter(sous_canal__icontains='VIE'))},
         {'perimetre': 'IARD',   'stats': calc(reponses.filter(sous_canal__icontains='IARD'))},
         {'perimetre': 'GLOBAL', 'stats': calc(reponses)},
     ]
@@ -111,12 +116,17 @@ def saisie(request):
             nps_score = None
             categorie_nps = request.POST.get('categorie_nps', '')
 
-            if nps_intervalle == "9 à 10":
+            if nps_intervalle == "10":
                 nps_score = 10
-            elif nps_intervalle == "7 à 8":
+            elif nps_intervalle == "8":
                 nps_score = 8
-            elif nps_intervalle == "0 à 6":
+            elif nps_intervalle == "6":
                 nps_score = 6
+
+            # Récupération de l'objet de visite ou de l'alternative précisée
+            objet_visite = request.POST.get('objet_visite')
+            if objet_visite == "Autre":
+                objet_visite = request.POST.get('objet_visite_autre')
 
             ReponseClient.objects.create(
                 cc                   = request.user,
@@ -124,9 +134,9 @@ def saisie(request):
                 nom_prenoms          = request.POST.get('nom_prenoms'),
                 contact              = request.POST.get('contact'),
                 numero_police        = request.POST.get('numero_police'),
-                objet_visite         = request.POST.get('objet_visite'),
+                objet_visite         = objet_visite,
                 canal                = request.POST.get('canal'),
-                sous_canal           = request.POST.get('sous_canal') or None,
+                sous_canal           = request.POST.get('sous_canal'), # Ajout du Périmètre choisi
                 date_appel           = request.POST.get('date_appel') or date.today(),
                 statut_appel         = request.POST.get('statut_appel'),
                 nps_score            = nps_score,
@@ -136,7 +146,7 @@ def saisie(request):
                 motif_insatisfaction = request.POST.get('motif_insatisfaction'),
                 observations         = request.POST.get('observations'),
             )
-            messages.success(request, 'BingoRéponse enregistrée avec succès ✅')
+            messages.success(request, 'Réponse enregistrée avec succès ✅')
             return redirect('saisie')
         except Exception as e:
             messages.error(request, f'Erreur : {e}')
@@ -146,44 +156,48 @@ def saisie(request):
 @login_required(login_url='login')
 def liste(request):
     reponses = ReponseClient.objects.all().order_by('-date_appel')
+    
+    # Récupération des filtres depuis le template de l'application
+    canal      = request.GET.get('canal')
+    sous_canal = request.GET.get('sous_canal')
+    indicateur = request.GET.get('indicateur')
+    statut     = request.GET.get('statut')
+    nom_client = request.GET.get('nom_client', '').strip()
+    tel_client = request.GET.get('tel_client', '').strip()
+    date_debut = request.GET.get('date_debut')
+    date_fin   = request.GET.get('date_fin')
 
-    canal       = request.GET.get('canal')
-    sous_canal  = request.GET.get('sous_canal')
-    indicateur  = request.GET.get('indicateur')
-    nom         = request.GET.get('nom')
-    date_debut  = request.GET.get('date_debut')
-    date_fin    = request.GET.get('date_fin')
-
-    if canal:
+    # Application des filtres cumulés
+    if canal: 
         reponses = reponses.filter(canal=canal)
+    
     if sous_canal:
         reponses = reponses.filter(sous_canal=sous_canal)
-    if nom:
-        reponses = reponses.filter(nom_prenoms__icontains=nom)
-    if date_debut:
+        
+    if indicateur:
+        if indicateur == 'NPS':
+            reponses = reponses.exclude(categorie_nps='')
+        elif indicateur == 'CSAT':
+            reponses = reponses.filter(csat='Satisfait')
+        elif indicateur == 'CES':
+            reponses = reponses.filter(ces__in=['Effort eleve', 'Effort faible'])
+
+    if statut: 
+        reponses = reponses.filter(statut_appel=statut)
+        
+    if nom_client:
+        reponses = reponses.filter(nom_prenoms__icontains=nom_client)
+        
+    if tel_client:
+        reponses = reponses.filter(contact__icontains=tel_client)
+        
+    if date_debut: 
         reponses = reponses.filter(date_appel__gte=date_debut)
-    if date_fin:
+        
+    if date_fin:   
         reponses = reponses.filter(date_appel__lte=date_fin)
 
-    if indicateur:
-        if indicateur in ('Promoteur', 'Passif', 'Detracteur'):
-            reponses = reponses.filter(categorie_nps=indicateur)
-        elif indicateur in ('Satisfait', 'Insatisfait'):
-            reponses = reponses.filter(csat=indicateur)
-        elif indicateur in ('Effort faible', 'Effort modere', 'Effort eleve'):
-            reponses = reponses.filter(ces=indicateur)
-
-    context = {
-        'reponses': reponses,
-        'canal': canal,
-        'sous_canal': sous_canal,
-        'indicateur': indicateur,
-        'nom': nom,
-        'date_debut': date_debut,
-        'date_fin': date_fin,
-    }
-    return render(request, 'relation_client/liste.html', context)
-
+    return render(request, 'relation_client/liste.html', {'reponses': reponses})
 
 @login_required(login_url='login')
 def profil(request):
@@ -223,7 +237,7 @@ def export(request):
     ws = wb.active
     ws.title = "Reponses Clients"
     entetes = [
-        'Canal', 'Sous-canal', 'Date Enregistrement', 'CC',
+        'Canal', 'Périmètre', 'Date Enregistrement', 'CC',
         'Nom et Prenoms', 'Contact', 'N Police',
         'Objet Visite', 'Date Appel', 'Statut Appel',
         'Score NPS', 'Categorie NPS', 'CSAT', 'CES',
@@ -234,9 +248,10 @@ def export(request):
         cell.font = Font(bold=True, color='FFFFFF')
         cell.fill = PatternFill('solid', fgColor='E30613')
         cell.alignment = Alignment(horizontal='center')
+        
     for row, r in enumerate(reponses, start=2):
         ws.cell(row=row, column=1,  value=r.canal)
-        ws.cell(row=row, column=2,  value=r.sous_canal)
+        ws.cell(row=row, column=2,  value=r.sous_canal) # Intégration du Périmètre dans l'export Excel
         ws.cell(row=row, column=3,  value=str(r.date_enregistrement))
         ws.cell(row=row, column=4,  value=r.cc.username)
         ws.cell(row=row, column=5,  value=r.nom_prenoms)
@@ -251,6 +266,7 @@ def export(request):
         ws.cell(row=row, column=14, value=r.ces)
         ws.cell(row=row, column=15, value=r.motif_insatisfaction)
         ws.cell(row=row, column=16, value=r.observations)
+        
     for col in ws.columns:
         ws.column_dimensions[col[0].column_letter].width = 18
     response = HttpResponse(
@@ -259,14 +275,6 @@ def export(request):
     response['Content-Disposition'] = 'attachment; filename="SUNU_Reponses.xlsx"'
     wb.save(response)
     return response
-
-
-import os
-from django.http import FileResponse
-from django.conf import settings
-
-from .utils_report import get_week_range, get_month_range, label_week, label_month, get_period_stats
-from .pptx_report import generate_report
 
 
 def export_pptx(request):
@@ -294,6 +302,7 @@ def export_pptx(request):
     generate_report(period_label, stats, output_path)
 
     return FileResponse(open(output_path, "rb"), as_attachment=True, filename=filename)
+
 
 # ==========================================
 # 5. WORKFLOW MODIFICATIONS ET AGENTS
@@ -372,7 +381,7 @@ def modifier_saisie(request, saisie_id):
             saisie.numero_police        = request.POST.get('numero_police')
             saisie.objet_visite         = request.POST.get('objet_visite')
             saisie.canal                = request.POST.get('canal')
-            saisie.sous_canal           = request.POST.get('sous_canal') or None
+            saisie.sous_canal           = request.POST.get('sous_canal') # Ajout modifiable du Périmètre
             saisie.date_appel           = request.POST.get('date_appel') or saisie.date_appel
             saisie.statut_appel         = request.POST.get('statut_appel')
             saisie.nps_score            = nps_score
@@ -428,6 +437,8 @@ def demandes_admin(request):
                     saisie.statut_appel = valeur
                 elif champ == 'canal':
                     saisie.canal = valeur
+                elif champ == 'sous_canal': # Géré au cas où l'admin approuve ce champ spécifique
+                    saisie.sous_canal = valeur
                 elif champ == 'nom_prenoms':
                     saisie.nom_prenoms = valeur
                 elif champ == 'contact':

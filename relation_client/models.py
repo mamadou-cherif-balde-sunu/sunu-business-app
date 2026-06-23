@@ -14,7 +14,7 @@ class ReponseClient(models.Model):
     numero_police = models.CharField(max_length=50, blank=True, null=True)
     objet_visite = models.CharField(max_length=200, blank=True, null=True)
     canal = models.CharField(max_length=30, choices=CANAL_CHOICES)
-    sous_canal = models.CharField(max_length=30, blank=True, null=True)
+    sous_canal = models.CharField(max_length=50, blank=True, null=True)
     date_appel = models.DateField()
     statut_appel = models.CharField(max_length=20, choices=STATUT_CHOICES)
     nps_score = models.IntegerField(blank=True, null=True)

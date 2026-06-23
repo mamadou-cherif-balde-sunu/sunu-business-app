@@ -14,7 +14,7 @@
     </a>
 </div>
 
-<!-- TABLEAU PRINCIPAL -->
+<!-- TABLEAU PRINCIPAL : Resultats par perimetre -->
 <div class="card mb-4">
     <div class="card-header">
         <i class="fas fa-table me-2"></i> Resultats par perimetre
@@ -24,14 +24,11 @@
             <thead>
                 <tr>
                     <th>Perimetre</th>
-                    <th>Total clients</th>
-                    <th>Promoteurs</th>
-                    <th>Passifs</th>
-                    <th>Detracteurs</th>
+                    <th>Total</th>
                     <th>NPS (%)</th>
-                    <th>Statut NPS</th>
                     <th>CSAT (%)</th>
                     <th>CES (%)</th>
+                    <th>Statut Appel</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,26 +37,32 @@
                 <tr>
                     <td><strong>{{ ligne.perimetre }}</strong></td>
                     <td>{{ ligne.stats.total }}</td>
-                    <td><span class="badge bg-success">{{ ligne.stats.promoteurs }}</span></td>
-                    <td><span class="badge bg-secondary">{{ ligne.stats.passifs }}</span></td>
-                    <td><span class="badge bg-danger">{{ ligne.stats.detracteurs }}</span></td>
                     <td>
                         <strong style="color:{% if ligne.stats.nps >= 50 %}#1D9E75{% else %}#E30613{% endif %}">
                             {{ ligne.stats.nps }}%
                         </strong>
-                    </td>
-                    <td>
-                        {% if ligne.stats.nps >= 50 %}
-                            <span class="badge bg-success">Objectif atteint</span>
-                        {% else %}
-                            <span class="badge bg-danger">Sous seuil (50%)</span>
-                        {% endif %}
                     </td>
                     <td>{{ ligne.stats.csat }}%</td>
                     <td>
                         <span style="color:{% if ligne.stats.ces <= 0 %}#1D9E75{% else %}#E30613{% endif %}">
                             {{ ligne.stats.ces }}%
                         </span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 flex-wrap">
+                            {% if ligne.stats.joints > 0 %}
+                                <span class="badge bg-success">Joint</span>
+                            {% endif %}
+                            {% if ligne.stats.injoignables > 0 %}
+                                <span class="badge bg-danger">Injoignable</span>
+                            {% endif %}
+                            {% if ligne.stats.pas_reponse > 0 %}
+                                <span class="badge bg-warning text-dark">Pas de reponse</span>
+                            {% endif %}
+                            {% if ligne.stats.joints == 0 and ligne.stats.injoignables == 0 and ligne.stats.pas_reponse == 0 %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endif %}
@@ -69,105 +72,201 @@
     </div>
 </div>
 
-<!-- TABLEAU STATUT APPELS -->
+<!-- GRAPHIQUE NPS -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-chart-line me-2"></i> NPS par perimetre</span>
+        <span class="small text-muted">Objectif : 50% — ligne pointillee</span>
+    </div>
+    <div class="card-body">
+        <canvas id="chartNPS" height="110"></canvas>
+    </div>
+</div>
+
+<!-- GRAPHIQUES CSAT / CES -->
 <div class="row g-3 mb-4">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-phone me-2"></i> Statut des appels
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Perimetre</th>
-                            <th>Joints</th>
-                            <th>Injoignables</th>
-                            <th>Pas de reponse</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ligne in tableau %}
-                        {% if ligne.stats %}
-                        <tr>
-                            <td><strong>{{ ligne.perimetre }}</strong></td>
-                            <td><span class="badge bg-success">{{ ligne.stats.joints }}</span></td>
-                            <td><span class="badge bg-danger">{{ ligne.stats.injoignables }}</span></td>
-                            <td><span class="badge bg-warning text-dark">{{ ligne.stats.pas_reponse }}</span></td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-chart-pie me-2"></i> Repartition CSAT
+                <i class="fas fa-chart-bar me-2"></i> CSAT par perimetre
             </div>
             <div class="card-body">
                 <canvas id="chartCSAT" height="180"></canvas>
             </div>
         </div>
     </div>
-</div>
-
-<!-- GRAPHIQUE CES -->
-<div class="card">
-    <div class="card-header">
-        <i class="fas fa-chart-bar me-2"></i> CES — Effort client par perimetre
-    </div>
-    <div class="card-body">
-        <canvas id="chartCES" height="120"></canvas>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i> CES — Effort client par perimetre
+            </div>
+            <div class="card-body">
+                <canvas id="chartCES" height="180"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-const labels = [{% for l in tableau %}{% if l.stats %}'{{ l.perimetre }}',{% endif %}{% endfor %}];
-const csat   = [{% for l in tableau %}{% if l.stats %}{{ l.stats.csat }},{% endif %}{% endfor %}];
-const ces    = [{% for l in tableau %}{% if l.stats %}{{ l.stats.ces }},{% endif %}{% endfor %}];
+const labels   = [{% for l in tableau %}{% if l.stats %}'{{ l.perimetre }}',{% endif %}{% endfor %}];
+const npsData  = [{% for l in tableau %}{% if l.stats %}{{ l.stats.nps }},{% endif %}{% endfor %}];
+const csatData = [{% for l in tableau %}{% if l.stats %}{{ l.stats.csat }},{% endif %}{% endfor %}];
+const cesData  = [{% for l in tableau %}{% if l.stats %}{{ l.stats.ces }},{% endif %}{% endfor %}];
 
-new Chart(document.getElementById('chartCSAT'), {
-    type: 'doughnut',
+const couleurs = {
+    'VIE':    '#E30613',
+    'IARD':   '#58595B',
+    'GLOBAL': '#2E6DA4'
+};
+const backgroundColors = labels.map(l => couleurs[l] || '#999');
+
+function valueLabelsPlugin(suffix = '%') {
+    return {
+        id: 'valueLabels',
+        afterDatasetsDraw(chart) {
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((dataset, i) => {
+                if (dataset.type === 'line') return;
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    ctx.save();
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.textAlign = 'center';
+                    if (chart.config.options.indexAxis === 'y') {
+                        ctx.textAlign = 'left';
+                        ctx.fillText(value + suffix, bar.x + 8, bar.y + 4);
+                    } else {
+                        const yPos = value >= 0 ? bar.y - 8 : bar.y + 16;
+                        ctx.fillText(value + suffix, bar.x, yPos);
+                    }
+                    ctx.restore();
+                });
+            });
+        }
+    };
+}
+
+// NPS — barres divergentes avec ligne de seuil a 50% (sans legende)
+new Chart(document.getElementById('chartNPS'), {
     data: {
         labels: labels,
-        datasets: [{
-            data: csat,
-            backgroundColor: ['#E30613', '#58595B', '#2E6DA4'],
-            borderWidth: 0
-        }]
+        datasets: [
+            {
+                type: 'bar',
+                label: 'NPS (%)',
+                data: npsData,
+                backgroundColor: backgroundColors,
+                borderRadius: 5,
+                order: 2
+            },
+            {
+                type: 'line',
+                label: 'Objectif (50%)',
+                data: labels.map(() => 50),
+                borderColor: '#1D9E75',
+                borderDash: [6, 4],
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                order: 1
+            }
+        ]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom' }
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ' ' + ctx.dataset.label + ' : ' + ctx.raw + '%'
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: -100, max: 100,
+                grid: { color: '#F0F0F0' },
+                ticks: { callback: v => v + '%' },
+                title: { display: true, text: 'NPS (%)', font: { size: 11 } }
+            },
+            x: { grid: { display: false } }
         }
-    }
+    },
+    plugins: [valueLabelsPlugin('%')]
 });
 
+// CSAT — barres horizontales
+new Chart(document.getElementById('chartCSAT'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'CSAT (%)',
+            data: csatData,
+            backgroundColor: backgroundColors,
+            borderRadius: 5
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: ctx => ' CSAT : ' + ctx.raw + '%' }
+            }
+        },
+        scales: {
+            x: {
+                min: 0, max: 100,
+                grid: { color: '#F0F0F0' },
+                ticks: { callback: v => v + '%' },
+                title: { display: true, text: '% clients satisfaits', font: { size: 11 } }
+            },
+            y: { grid: { display: false } }
+        }
+    },
+    plugins: [valueLabelsPlugin('%')]
+});
+
+// CES — barres divergentes
 new Chart(document.getElementById('chartCES'), {
     type: 'bar',
     data: {
         labels: labels,
         datasets: [{
             label: 'CES (%)',
-            data: ces,
-            backgroundColor: ['#E30613', '#58595B', '#2E6DA4'],
+            data: cesData,
+            backgroundColor: backgroundColors,
             borderRadius: 5
         }]
     },
     options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: ctx => ' CES : ' + ctx.raw + '%' }
+            }
+        },
         scales: {
-            y: { min: -100, max: 100, grid: { color: '#F0F0F0' } },
+            y: {
+                min: -100, max: 100,
+                grid: { color: '#F0F0F0' },
+                ticks: { callback: v => v + '%' },
+                title: { display: true, text: '% effort eleve - % effort faible', font: { size: 11 } }
+            },
             x: { grid: { display: false } }
         }
-    }
+    },
+    plugins: [valueLabelsPlugin('%')]
 });
 </script>
 {% endblock %}

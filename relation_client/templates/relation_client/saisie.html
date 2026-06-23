@@ -40,10 +40,10 @@
 
                 <div class="col-md-4" id="div_sous_canal" style="display: none;">
                     <label class="form-label fw-semibold small text-uppercase" id="label_sous_canal">
-                        Type
+                        Perimetre
                     </label>
                     <select name="sous_canal" id="sous_canal" class="form-select">
-                        </select>
+                    </select>
                 </div>
 
                 <div class="col-md-4">
@@ -185,14 +185,14 @@ function gererSousCanal() {
 
     selectSousCanal.innerHTML = "";
 
-    if (canal === "Appel(1363)") {
+    if (canal === "Appel(1363)" || canal === "QR CODE") {
         divSousCanal.style.display = "block";
-        labelSousCanal.innerText = "Type de Centre d'appel";
+        labelSousCanal.innerText = "Perimetre";
         selectSousCanal.required = true;
 
         selectSousCanal.options.add(new Option("-- Choisir --", ""));
-        selectSousCanal.options.add(new Option("Call center Vie", "Call center Vie"));
-        selectSousCanal.options.add(new Option("Call center IARD", "Call center IARD"));
+        selectSousCanal.options.add(new Option("Perimetre VIE", "Perimetre VIE"));
+        selectSousCanal.options.add(new Option("Perimetre IARD", "Perimetre IARD"));
     }
     else {
         divSousCanal.style.display = "none";

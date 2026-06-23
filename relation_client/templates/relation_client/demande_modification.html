@@ -29,6 +29,7 @@
                 <div><span style="color:#999">Client :</span> <strong>{{ saisie.nom_prenoms }}</strong></div>
                 <div><span style="color:#999">Contact :</span> {{ saisie.contact }}</div>
                 <div><span style="color:#999">Canal :</span> {{ saisie.canal }}</div>
+                <div><span style="color:#999">Perimetre :</span> {{ saisie.sous_canal|default:"—" }}</div>
                 <div><span style="color:#999">Date appel :</span> {{ saisie.date_appel|date:"d/m/Y" }}</div>
                 <div><span style="color:#999">Statut :</span> {{ saisie.statut_appel }}</div>
                 <div><span style="color:#999">NPS :</span> {{ saisie.categorie_nps }}</div>
@@ -75,6 +76,7 @@
                                             <option value="nom_prenoms">Nom et Prénoms</option>
                                             <option value="contact">Contact</option>
                                             <option value="canal">Canal</option>
+                                            <option value="sous_canal">Perimetre</option>
                                             <option value="statut_appel">Statut Appel</option>
                                             <option value="nps_score">Score NPS</option>
                                             <option value="categorie_nps">Catégorie NPS</option>
@@ -122,11 +124,12 @@
 
 {% block scripts %}
 <script>
-// Définition des valeurs par champ
+// Definition des valeurs par champ
 const champOptions = {
     'nom_prenoms':   { type: 'text',   placeholder: 'Ex: Jean Dupont' },
     'contact':       { type: 'text',   placeholder: 'Ex: 07XXXXXXXX' },
-    'canal':         { type: 'select', options: ['Call Center VIE', 'Call Center IARD', 'Espace Conseil VIE'] },
+    'canal':         { type: 'select', options: ['Appel(1363)', 'QR CODE'] },
+    'sous_canal':    { type: 'select', options: ['Perimetre VIE', 'Perimetre IARD'] },
     'statut_appel':  { type: 'select', options: ['Joint', 'Injoignable', 'Pas de reponse'] },
     'nps_score':     { type: 'number', placeholder: '0 à 10', min: 0, max: 10 },
     'categorie_nps': { type: 'select', options: ['Promoteur', 'Passif', 'Detracteur'] },
@@ -157,7 +160,7 @@ function mettreAJourValeur(select) {
     }
 }
 
-// Écouter les changements sur les selects existants
+// Ecouter les changements sur les selects existants
 document.querySelectorAll('.champ-select').forEach(select => {
     select.addEventListener('change', function() { mettreAJourValeur(this); });
 });
@@ -168,18 +171,15 @@ document.getElementById('ajouter-ligne').addEventListener('click', function() {
     const premiere  = container.querySelector('.ligne-modification');
     const clone     = premiere.cloneNode(true);
 
-    // Réinitialiser le clone
     clone.querySelector('.champ-select').value = '';
     clone.querySelector('.valeur-container').innerHTML =
         '<input type="text" name="nouvelle_valeur[]" class="form-control valeur-input" placeholder="Choisissez d\'abord un champ" disabled/>';
     clone.querySelector('.supprimer-ligne').style.display = 'inline-block';
 
-    // Écouter le changement sur le nouveau select
     clone.querySelector('.champ-select').addEventListener('change', function() {
         mettreAJourValeur(this);
     });
 
-    // Bouton supprimer
     clone.querySelector('.supprimer-ligne').addEventListener('click', function() {
         clone.remove();
     });

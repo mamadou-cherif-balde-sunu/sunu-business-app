@@ -5,10 +5,8 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 style="color:
-#58595B;font-weight:600">Liste des Reponses</h4>
-        <div style="width:40px;height:3px;background:
-#E30613;border-radius:2px;margin-top:6px"></div>
+        <h4 style="color:#58595B;font-weight:600">Liste des Reponses</h4>
+        <div style="width:40px;height:3px;background:#E30613;border-radius:2px;margin-top:6px"></div>
     </div>
     <a href="{% url 'saisie' %}" class="btn btn-sunu">
         <i class="fas fa-plus me-2"></i> Nouvelle saisie
@@ -19,34 +17,74 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
+            <!-- 1. CANAL -->
             <div class="col-md-3">
                 <label class="form-label fw-semibold small text-uppercase">Canal</label>
-                <select name="canal" class="form-select form-select-sm">
+                <select name="canal" id="id_canal" class="form-select form-select-sm" onchange="togglePerimetre()">
                     <option value="">Tous</option>
-                    <option value="Call Center VIE">Call Center VIE</option>
-                    <option value="Call Center IARD">Call Center IARD</option>
-                    <option value="Espace Conseil VIE">Espace Conseil VIE</option>
+                    <option value="Appel(1363)" {% if request.GET.canal == "Appel(1363)" %}selected{% endif %}>Appel(1363)</option>
+                    <option value="QR CODE" {% if request.GET.canal == "QR CODE" %}selected{% endif %}>QR CODE</option>
                 </select>
             </div>
+
+            <!-- 2. PÉRIMÈTRE (Apparaît si un Canal est choisi) -->
+            <div class="col-md-3" id="bloc_perimetre" style="display: {% if request.GET.canal %}block{% else %}none{% endif %};">
+                <label class="form-label fw-semibold small text-uppercase">Périmètre</label>
+                <select name="sous_canal" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="Perimetre VIE" {% if request.GET.sous_canal == "Perimetre VIE" %}selected{% endif %}>Périmètre VIE</option>
+                    <option value="Perimetre IARD" {% if request.GET.sous_canal == "Perimetre IARD" %}selected{% endif %}>Périmètre IARD</option>
+                </select>
+            </div>
+
+            <!-- 3. INDICATEURS (Contient NPS, CSAT, CES) -->
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase">Indicateurs</label>
+                <select name="indicateur" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="NPS" {% if request.GET.indicateur == 'NPS' %}selected{% endif %}>NPS</option>
+                    <option value="CSAT" {% if request.GET.indicateur == 'CSAT' %}selected{% endif %}>CSAT</option>
+                    <option value="CES" {% if request.GET.indicateur == 'CES' %}selected{% endif %}>CES</option>
+                </select>
+            </div>
+
+            <!-- 4. STATUT APPEL -->
             <div class="col-md-3">
                 <label class="form-label fw-semibold small text-uppercase">Statut Appel</label>
                 <select name="statut" class="form-select form-select-sm">
                     <option value="">Tous</option>
-                    <option value="Joint">Joint</option>
-                    <option value="Injoignable">Injoignable</option>
-                    <option value="Pas de reponse">Pas de reponse</option>
+                    <option value="Joint" {% if request.GET.statut == "Joint" %}selected{% endif %}>Joint</option>
+                    <option value="Injoignable" {% if request.GET.statut == "Injoignable" %}selected{% endif %}>Injoignable</option>
+                    <option value="Pas de reponse" {% if request.GET.statut == "Pas de reponse" %}selected{% endif %}>Pas de reponse</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label fw-semibold small text-uppercase">NPS</label>
-                <select name="nps" class="form-select form-select-sm">
-                    <option value="">Tous</option>
-                    <option value="Promoteur">Promoteur</option>
-                    <option value="Passif">Passif</option>
-                    <option value="Detracteur">Detracteur</option>
-                </select>
+
+            <!-- 5. INFOS-CLIENT (Choix Nom et/ou Téléphone) -->
+            <div class="col-md-9">
+                <label class="form-label fw-semibold small text-uppercase d-block">Infos-Client</label>
+                <div class="d-flex gap-3 mb-2 small">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check_nom" onchange="toggleInfosClient()" {% if request.GET.nom_client %}checked{% endif %}>
+                        <label class="form-check-label" for="check_nom">Nom du client</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check_tel" onchange="toggleInfosClient()" {% if request.GET.tel_client %}checked{% endif %}>
+                        <label class="form-check-label" for="check_tel">Téléphone du client</label>
+                    </div>
+                </div>
+                
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" name="nom_client" id="input_nom" placeholder="Rechercher par nom..." value="{{ request.GET.nom_client|default:'' }}" class="form-control form-control-sm" style="display: {% if request.GET.nom_client %}block{% else %}none{% endif %};">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="tel_client" id="input_tel" placeholder="Rechercher par téléphone..." value="{{ request.GET.tel_client|default:'' }}" class="form-control form-control-sm" style="display: {% if request.GET.tel_client %}block{% else %}none{% endif %};">
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
+
+            <!-- BOUTON FILTRER UNIQUE -->
+            <div class="col-md-3 d-flex align-items-end ms-auto">
                 <button type="submit" class="btn btn-sunu btn-sm w-100">
                     <i class="fas fa-filter me-2"></i> Filtrer
                 </button>
@@ -73,6 +111,7 @@
                         <th>Client</th>
                         <th>Contact</th>
                         <th>Canal</th>
+                        <th>Périmètre</th>
                         <th>Statut</th>
                         <th>NPS</th>
                         <th>CSAT</th>
@@ -87,6 +126,13 @@
                         <td>{{ r.nom_prenoms }}</td>
                         <td>{{ r.contact }}</td>
                         <td>{{ r.canal }}</td>
+                        <td>
+                            {% if r.sous_canal %}
+                                <span class="badge bg-light text-dark border">{{ r.sous_canal }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if r.statut_appel == 'Joint' %}
                                 <span class="badge bg-success">Joint</span>
@@ -116,7 +162,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">
+                        <td colspan="10" class="text-center text-muted py-4">
                             Aucune reponse enregistree
                         </td>
                     </tr>
@@ -126,4 +172,39 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePerimetre() {
+    const canalSelect = document.getElementById('id_canal');
+    const blocPerimetre = document.getElementById('bloc_perimetre');
+    
+    if (canalSelect.value !== "") {
+        blocPerimetre.style.display = "block";
+    } else {
+        blocPerimetre.style.display = "none";
+        blocPerimetre.querySelector('select').value = ""; 
+    }
+}
+
+function toggleInfosClient() {
+    const checkNom = document.getElementById('check_nom');
+    const checkTel = document.getElementById('check_tel');
+    const inputNom = document.getElementById('input_nom');
+    const inputTel = document.getElementById('input_tel');
+
+    if (checkNom.checked) {
+        inputNom.style.display = "block";
+    } else {
+        inputNom.style.display = "none";
+        inputNom.value = ""; 
+    }
+
+    if (checkTel.checked) {
+        inputTel.style.display = "block";
+    } else {
+        inputTel.style.display = "none";
+        inputTel.value = ""; 
+    }
+}
+</script>
 {% endblock %}

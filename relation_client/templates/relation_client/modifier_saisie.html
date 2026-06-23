@@ -25,7 +25,7 @@
         <form method="post">
             {% csrf_token %}
             <div class="row g-3">
-                
+
                 <!-- Date enregistrement -->
                 <div class="col-md-4">
                     <label class="form-label fw-semibold small text-uppercase">Date enregistrement</label>
@@ -40,16 +40,14 @@
                         <option value="">-- Choisir --</option>
                         <option value="Appel(1363)" {% if saisie.canal == "Appel(1363)" %}selected{% endif %}>Appel(1363)</option>
                         <option value="QR CODE" {% if saisie.canal == "QR CODE" %}selected{% endif %}>QR CODE</option>
-                        <option value="Mail" {% if saisie.canal == "Mail" %}selected{% endif %}>Mail</option>
-                        <option value="Presentiel" {% if saisie.canal == "Presentiel" %}selected{% endif %}>Presentiel</option>
                     </select>
                 </div>
 
-                <!-- Sous-canal dynamique -->
+                <!-- Sous-canal / Perimetre -->
                 <div class="col-md-4" id="div_sous_canal" style="display: none;">
-                    <label class="form-label fw-semibold small text-uppercase" id="label_sous_canal">Type</label>
+                    <label class="form-label fw-semibold small text-uppercase" id="label_sous_canal">Perimetre</label>
                     <select name="sous_canal" id="sous_canal" class="form-select">
-                        <!-- Géré par JS au chargement -->
+                        <!-- Gere par JS au chargement -->
                     </select>
                 </div>
 
@@ -60,21 +58,21 @@
                            value="{{ saisie.date_appel|date:'Y-m-d' }}" required/>
                 </div>
 
-                <!-- Nom et Prénoms -->
+                <!-- Nom et Prenoms -->
                 <div class="col-md-6">
                     <label class="form-label fw-semibold small text-uppercase">Nom et Prenoms</label>
                     <input type="text" name="nom_prenoms" class="form-control"
                            value="{{ saisie.nom_prenoms }}" required/>
                 </div>
 
-                <!-- Contact (chiffres uniquement) -->
+                <!-- Contact -->
                 <div class="col-md-3">
                     <label class="form-label fw-semibold small text-uppercase">Contact</label>
                     <input type="tel" name="contact" class="form-control" value="{{ saisie.contact }}"
-                           placeholder="" oninput="this.value = this.value.replace(/[^0-9]/g, '');"/>
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '');"/>
                 </div>
 
-                <!-- N° Police -->
+                <!-- N Police -->
                 <div class="col-md-3">
                     <label class="form-label fw-semibold small text-uppercase">N° Police</label>
                     <input type="text" name="numero_police" class="form-control" value="{{ saisie.numero_police }}"/>
@@ -107,7 +105,7 @@
                     </select>
                 </div>
 
-                <!-- Catégorie NPS -->
+                <!-- Categorie NPS -->
                 <div class="col-md-4">
                     <label class="form-label fw-semibold small text-uppercase">Categorie NPS</label>
                     <select name="categorie_nps" id="categorie_nps" class="form-select" onchange="changerValeurNPS()">
@@ -118,10 +116,13 @@
                     </select>
                 </div>
 
-                <!-- Valeur NPS -->
+                <!-- Valeur NPS (Score) -->
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small text-uppercase">Valeur NPS</label>
-                    <input type="text" name="nps_score" id="nps_score" class="form-control" readonly/>
+                    <label class="form-label fw-semibold small text-uppercase">Valeur NPS (Score)</label>
+                    <div class="input-group">
+                        <input type="number" name="nps_score" id="nps_score" class="form-control" readonly required/>
+                        <span class="input-group-text bg-light text-muted small" id="nps_info_label">Plage</span>
+                    </div>
                 </div>
 
                 <!-- CSAT -->
@@ -145,10 +146,10 @@
                     </select>
                 </div>
 
-                <!-- Motif d'insatisfaction -->
+                <!-- Motif insatisfaction -->
                 <div class="col-md-4" id="div_motif_insatisfaction" style="display: none;">
                     <label class="form-label fw-semibold small text-uppercase">Motif insatisfaction</label>
-                    <input type="text" name="motif_insatisfaction" id="motif_insatisfaction" class="form-control" 
+                    <input type="text" name="motif_insatisfaction" id="motif_insatisfaction" class="form-control"
                            value="{{ saisie.motif_insatisfaction }}" placeholder="Motif"/>
                 </div>
 
@@ -173,7 +174,6 @@
 </div>
 
 <script>
-// Sauvegarde de la valeur initiale du sous-canal venant de la BDD
 const sousCanalInitial = "{{ saisie.sous_canal|default:'' }}";
 const objetInitial = "{{ saisie.objet_visite|default:'' }}";
 
@@ -185,30 +185,21 @@ function gererSousCanal() {
 
     selectSousCanal.innerHTML = "";
 
-    if (canal === "Appel(1363)") {
+    if (canal === "Appel(1363)" || canal === "QR CODE") {
         divSousCanal.style.display = "block";
-        labelSousCanal.innerText = "Type de Centre d'appel";
-        selectSousCanal.required = true;
-        
-        selectSousCanal.options.add(new Option("-- Choisir --", ""));
-        selectSousCanal.options.add(new Option("Call center Vie", "Call center Vie"));
-        selectSousCanal.options.add(new Option("Call center IARD", "Call center IARD"));
-    } 
-    else if (canal === "Presentiel") {
-        divSousCanal.style.display = "block";
-        labelSousCanal.innerText = "Type de Présentiel";
+        labelSousCanal.innerText = "Perimetre";
         selectSousCanal.required = true;
 
         selectSousCanal.options.add(new Option("-- Choisir --", ""));
-        selectSousCanal.options.add(new Option("Espace conseil", "Espace conseil"));
-    } 
+        selectSousCanal.options.add(new Option("Perimetre VIE", "Perimetre VIE"));
+        selectSousCanal.options.add(new Option("Perimetre IARD", "Perimetre IARD"));
+    }
     else {
         divSousCanal.style.display = "none";
         selectSousCanal.required = false;
     }
 
-    // Sélection de la valeur existante si elle correspond
-    if (sousCanalInitial && (canal === "Appel(1363)" || canal === "Presentiel")) {
+    if (sousCanalInitial) {
         for (let option of selectSousCanal.options) {
             if (option.value === sousCanalInitial) {
                 option.selected = true;
@@ -233,19 +224,25 @@ function gererObjetAutre() {
 
 function changerValeurNPS(){
     let categorie = document.getElementById("categorie_nps").value;
-    let valeur = "";
+    let scoreInput = document.getElementById("nps_score");
+    let infoLabel = document.getElementById("nps_info_label");
 
-    if(categorie === "Promoteur"){
-        valeur = "9 à 10";
+    if (categorie === "Promoteur") {
+        scoreInput.value = "10";
+        infoLabel.innerText = "Plage : 9 à 10";
     }
-    else if(categorie === "Passif"){
-        valeur = "7 à 8";
+    else if (categorie === "Passif") {
+        scoreInput.value = "8";
+        infoLabel.innerText = "Plage : 7 à 8";
     }
-    else if(categorie === "Detracteur"){
-        valeur = "0 à 6";
+    else if (categorie === "Detracteur") {
+        scoreInput.value = "6";
+        infoLabel.innerText = "Plage : 0 à 6";
     }
-
-    document.getElementById("nps_score").value = valeur;
+    else {
+        scoreInput.value = "";
+        infoLabel.innerText = "Plage";
+    }
 }
 
 function gererMotifInsatisfaction() {
@@ -262,12 +259,9 @@ function gererMotifInsatisfaction() {
     }
 }
 
-// Initialisation au chargement de la page pour ré-afficher les états corrects
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialiser le sous-canal
     gererSousCanal();
 
-    // 2. Initialiser l'objet s'il s'agit d'une valeur personnalisée ("Autre")
     let selectObjet = document.getElementById("objet_visite");
     if (objetInitial && selectObjet.value === "") {
         document.getElementById("option_autre").selected = true;
@@ -275,11 +269,15 @@ window.addEventListener('DOMContentLoaded', () => {
         gererObjetAutre();
     }
 
-    // 3. Initialiser la valeur NPS
     changerValeurNPS();
 
-    // 4. Initialiser l'affichage du motif d'insatisfaction
+    if (saisie_nps_initial) {
+        document.getElementById("nps_score").value = saisie_nps_initial;
+    }
+
     gererMotifInsatisfaction();
 });
+
+const saisie_nps_initial = "{{ saisie.nps_score|default:'' }}";
 </script>
 {% endblock %}
