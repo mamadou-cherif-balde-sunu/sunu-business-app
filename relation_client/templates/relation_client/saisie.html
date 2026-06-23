@@ -64,7 +64,16 @@
                     <label class="form-label fw-semibold small text-uppercase">
                         Contact
                     </label>
-                    <input type="text" name="contact" class="form-control" placeholder="Numero de telephone"/>
+                    <input type="text" 
+                           name="contact" 
+                           id="contact"
+                           class="form-control" 
+                           placeholder="" 
+                           maxlength="10" 
+                           pattern="\d{10}" 
+                           title="Le numéro de téléphone doit comporter exactement 10 chiffres." 
+                           oninput="validerTelephone(this)" 
+                           required/>
                 </div>
 
                 <div class="col-md-3">
@@ -177,6 +186,16 @@
 </div>
 
 <script>
+function validerTelephone(input) {
+    input.value = input.value.replace(/[^0-9]/g, '');
+
+    if (input.value.length < 10) {
+        input.setCustomValidity("Le numéro de téléphone est trop court. Il doit contenir exactement 10 chiffres.");
+    } else {
+        input.setCustomValidity("");
+    }
+}
+
 function gererSousCanal() {
     let canal = document.getElementById("canal").value;
     let divSousCanal = document.getElementById("div_sous_canal");
